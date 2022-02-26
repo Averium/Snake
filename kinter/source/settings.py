@@ -1,11 +1,11 @@
-import os
 import json
+import os
 
 
 class PATH:
-    SOURCE = os.getcwd()
-    ROOT = os.path.dirname(SOURCE)
+    ROOT = os.getcwd()
     DATA = os.path.join(ROOT, "data")
+    LAYOUT = os.path.join(DATA, "layout.json")
     COLORS = os.path.join(DATA, "colors.json")
     SCORE = os.path.join(DATA, "score.json")
     SETTINGS = os.path.join(DATA, "settings.json")
@@ -40,5 +40,6 @@ class JsonData:
 
 SETTINGS = JsonData(PATH.SETTINGS)
 COLORS = JsonData(PATH.COLORS)
+LAYOUT = JsonData(PATH.LAYOUT)
 SCORE = JsonData(PATH.SCORE, read_only=False)
 KEYS = JsonData(PATH.KEYBIND, read_only=False)

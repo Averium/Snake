@@ -1,12 +1,11 @@
-import os
-from tkinter import Tk, Canvas, BOTH
 from enum import Enum, auto
+from tkinter import Tk, Canvas, BOTH
 
-from game import Vector, Field, Snake, Apple
-from clock import Clock, Timer
-from events import EventHandler
-from flow import Flow
-from settings import SETTINGS, COLORS, KEYS
+from source.clock import Clock, Timer
+from source.events import EventHandler
+from source.game import Vector, Field, Snake, Apple
+from source.interface import Interface, WidgetGroup, Button, WindowHeader
+from source.settings import SETTINGS, COLORS, KEYS, LAYOUT
 
 
 class States(Enum):
@@ -27,25 +26,41 @@ class DIRECTION:
 class Framework(Tk):
 
     def __init__(self):
-        super().__init__()
+        Tk.__init__(self)
+        # StateMachine.__init__(self)
+
         self.resizable(False, False)
-        self.geometry(f"{SETTINGS.WIDTH * SETTINGS.TILE}x{SETTINGS.HEIGHT * SETTINGS.TILE}")
+        self.geometry(f"{LAYOUT.WIDTH}x{LAYOUT.HEIGHT}")
+        self.geometry(f"+100+100")
+        self.overrideredirect(True)
 
         self.running, self.paused = True, False
 
-        self.flow = Flow()
         self.clock = Clock(SETTINGS.FPS)
-        self.event = EventHandler(self)
-        self.display = Canvas(self, width=SETTINGS.WIDTH, height=SETTINGS.HEIGHT, bg=COLORS.FIELD)
+        self.event_handler = EventHandler(self)
+        self.display = Canvas(
+            self,
+            width=LAYOUT.WIDTH,
+            height=LAYOUT.HEIGHT,
+            bg=COLORS.BACKGROUND,
+            highlightthickness=0,
+            bd=0,
+        )
         self.display.pack(fill=BOTH, expand=True)
 
         self.timer = Timer(self.clock, SETTINGS.STARTING_SPEED)
-        self.field = Field()
+        self.field = Field(LAYOUT.FIELD_POS, LAYOUT.FIELD_SIZE)
         self.snake = Snake()
         self.apple = Apple()
         self.apple.repos(self.field)
 
-        self.interface = 0
+        self.interface = Interface()
+
+        self.header_group = WidgetGroup(self.interface, "Header", active=True)
+        self.header = WindowHeader(self.header_group, self)
+
+        self.menu_group = WidgetGroup(self.interface, "Menu", active=False)
+        self.start_button = Button(self.menu_group, LAYOUT.START_BUTTON, "Start")
 
         self.state = States.GAME
 
@@ -58,18 +73,20 @@ class Framework(Tk):
 
     def events(self):
 
-        if self.event[KEYS.UP, "press"]:
+        self.interface.events(self.event_handler)
+
+        if self.event_handler[KEYS.UP, "press"]:
             self.snake.turn(DIRECTION.UP)
-        if self.event[KEYS.DOWN, "press"]:
+        if self.event_handler[KEYS.DOWN, "press"]:
             self.snake.turn(DIRECTION.DOWN)
-        if self.event[KEYS.LEFT, "press"]:
+        if self.event_handler[KEYS.LEFT, "press"]:
             self.snake.turn(DIRECTION.LEFT)
-        if self.event[KEYS.RIGHT, "press"]:
+        if self.event_handler[KEYS.RIGHT, "press"]:
             self.snake.turn(DIRECTION.RIGHT)
 
-        if self.event[KEYS.EXIT, "press"]:
+        if self.event_handler[KEYS.EXIT, "press"]:
             self.running = False
-        if self.event[KEYS.PAUSE, "press"]:
+        if self.event_handler[KEYS.PAUSE, "press"]:
             self.paused = not self.paused
 
     def logic(self):
@@ -77,10 +94,10 @@ class Framework(Tk):
             self.field.update()
             self.snake.move()
 
-            if self.field[self.snake.position.data] > 0:
+            if self.field[self.snake.position] > 0:
                 self.reset()
             else:
-                self.field[self.snake.position.data] = self.snake.length
+                self.field[self.snake.position] = self.snake.length
 
             if self.snake.position == self.apple.position:
                 self.apple.repos(self.field)
@@ -89,6 +106,7 @@ class Framework(Tk):
     def render(self):
         self.display.delete("all")
         self.field.render(self.display)
+        self.interface.render(self.display)
 
     def loop(self):
         self.clock.update()
@@ -98,18 +116,9 @@ class Framework(Tk):
             self.logic()
         self.render()
 
-        self.event.clear()
+        self.event_handler.clear()
 
         if self.running:
             self.after(self.clock.leftover(), self.loop)
         else:
             self.destroy()
-
-
-def main():
-    framework = Framework()
-    framework.mainloop()
-
-
-if __name__ == "__main__":
-    main()

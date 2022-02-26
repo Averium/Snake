@@ -1,10 +1,5 @@
 {
-  "WIDTH": 16,
-  "HEIGHT": 16,
-  "TILE": 32,
-  "GAP": 2,
   "FPS": 60,
-
   "STARTING_LENGTH": 3,
   "STARTING_SPEED": 200
 }

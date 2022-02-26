@@ -1,4 +1,3 @@
-from settings import SETTINGS
 from time import time
 
 

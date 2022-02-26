@@ -1,0 +1,18 @@
+{
+  "FONT_SIZE": 32,
+  "FONT": "Courier",
+
+  "WIDTH": 896,
+  "HEIGHT": 672,
+  "TILE": 32,
+
+  "FIELD_POS": [0, 32],
+  "FIELD_SIZE": [20, 20],
+  "INFO_POS": [640, 32],
+  "INFO_SIZE": [256, 640],
+
+  "GAP": 2,
+
+  "START_BUTTON": [352, 300],
+  "SETTINGS_BUTTON": [352, 332]
+}

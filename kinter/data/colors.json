@@ -1,6 +1,9 @@
 {
-  "FIELD": "#66e036",
-  "SNAKE": "#109415",
-  "PATTERN": "#08540b",
-  "APPLE": "#ff5319"
+  "BACKGROUND": "#202020",
+  "HEADER": "#303030",
+  "FIELD": "#101010",
+  "SNAKE": "#159410",
+  "PATTERN": "#003200",
+  "APPLE": "#b00000",
+  "BUTTON": ["#999999", "#d1d1d1"]
 }
