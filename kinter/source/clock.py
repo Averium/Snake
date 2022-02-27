@@ -21,14 +21,24 @@ class Clock:
 
 class Timer:
 
-    def __init__(self, clock, period):
+    def __init__(self, clock, period, periodic=True, running=True):
         self._clock = clock
         self._period = period / 1000
         self._mark = clock.now
+        self._periodic = periodic
+        self._running = running
 
-    def tick(self):
-        if self._clock.now - self._period > self._mark:
+    def __call__(self):
+        if self._running and self._clock.now - self._period > self._mark:
             self._mark = self._clock.now
+            self._running = self._periodic
             return True
         else:
             return False
+
+    def start(self):
+        self._mark = self._clock.now
+        self._running = True
+
+    def stop(self):
+        self._running = False

@@ -9,7 +9,7 @@ class State(ABC):
 
     def __init__(self, name, state_machine):
         self.name = name
-        self.game = state_machine
+        self.state_machine = state_machine
 
     @abstractmethod
     def check_conditions(self) -> (str, None):
@@ -49,6 +49,7 @@ class StateMachine(ABC):
         self._states = {}
         self.add_state(initial)
         self._active = initial
+        self._last = initial
         initial.entry_actions()
 
     def add_state(self, *states: State) -> None:
@@ -57,21 +58,28 @@ class StateMachine(ABC):
             self._states[state.name] = state
 
     @property
-    def state(self) -> str:
+    def current_state(self) -> str:
         """ returns: name of the current state """
         return self._active.name
 
-    @state.setter
-    def state(self, name: str) -> None:
+    @property
+    def last_state(self) -> State:
+        """ returns: name of the current state """
+        return self._last.name
+
+    @current_state.setter
+    def current_state(self, name: str) -> None:
         """ Executes proper change between states """
         self._active.exit_actions()
+        self._last = self._active
         self._active = self._states[name]
         self._active.entry_actions()
+        print(f"CURRENT STATE: {name}")
 
     def update_states(self) -> None:
         """ Method for handling state actions, and state transitions """
         if (new_state := self._active.check_conditions()) is not None:
-            self.state = new_state
+            self.current_state = new_state
 
     def state_events(self, *args, **kwargs): self._active.events(*args, **kwargs)
     def state_logic(self, *args, **kwargs): self._active.logic(*args, **kwargs)

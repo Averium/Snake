@@ -54,8 +54,6 @@ class Widget(Rectangle, ABC):
         Rectangle.__init__(self, *dim)
         group.append(self)
 
-        # self.center = Vector(*dim[:2])
-
         self.hovered = False
         self.entered = False
         self.last_hovered = False
@@ -64,7 +62,7 @@ class Widget(Rectangle, ABC):
 
     @classmethod
     def text(cls, display, pos, text, color, size=24):
-        display.create_text(*pos, text, fill=color, size=size)
+        display.create_text(*pos, text, fill=color, size=size, justify="center")
 
     def events(self, event_handler):
         self.hovered = self.focused(event_handler.focus)
@@ -125,11 +123,13 @@ class Label(Widget):
 
 class Button(Widget):
 
-    def __init__(self, group, pos, text: str, colors: (tuple, tuple) = COLORS.BUTTON):
+    def __init__(self, group, pos, text: str, colors: (tuple, tuple) = COLORS.WHITE_BUTTON):
         super().__init__(group, (*pos, 0, 0))
-        width = self.font.measure(text)
-        height = self.font.metrics("linespace")
-        self.resize(width, height)
+        if text:
+            width = self.font.measure(text)
+            height = self.font.metrics("linespace")
+            self.resize(width, height)
+            self.move(-Vector(width/2, height/2))
 
         self.text = text
         self.pressed = False
@@ -145,6 +145,17 @@ class Button(Widget):
     def render(self, display):
         color = self.colors[self.hovered]
         display.create_text(*self.center, text=self.text, justify="center", fill=color, font=self.font)
+
+
+class HeaderButton(Button):
+
+    def __init__(self, group, pos, colors):
+        super().__init__(group, pos, "", colors)
+        self.resize(LAYOUT.TILE - LAYOUT.GAP * 8, LAYOUT.TILE - LAYOUT.GAP * 8)
+
+    def render(self, display):
+        color = self.colors[self.hovered]
+        display.create_rectangle(*self.rect, fill=color, outline=color)
 
 
 class Switch(Widget):

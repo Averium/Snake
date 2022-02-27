@@ -3,31 +3,21 @@ from tkinter import Tk, Canvas, BOTH
 
 from source.clock import Clock, Timer
 from source.events import EventHandler
-from source.game import Vector, Field, Snake, Apple
-from source.interface import Interface, WidgetGroup, Button, WindowHeader
+from source.game import (
+    Vector, Field, Snake, Apple, Bonus, Intro, Menu, Start, Game, GameOver, NewHighScore, Paused, Settings,
+    KeyConfig, HighScores, Outro
+)
+from source.interface import Interface, WidgetGroup, Button, WindowHeader, HeaderButton
 from source.settings import SETTINGS, COLORS, KEYS, LAYOUT
+from source.state_machine import StateMachine
+from source.tools import DIRECTION
 
 
-class States(Enum):
-    MENU = auto()
-    SETTINGS = auto()
-    GAME = auto()
-    PAUSED = auto()
-    GAME_OVER = auto()
-
-
-class DIRECTION:
-    UP = Vector(0, -1)
-    DOWN = Vector(0, 1)
-    LEFT = Vector(-1, 0)
-    RIGHT = Vector(1, 0)
-
-
-class Framework(Tk):
+class Framework(Tk, StateMachine):
 
     def __init__(self):
+
         Tk.__init__(self)
-        # StateMachine.__init__(self)
 
         self.resizable(False, False)
         self.geometry(f"{LAYOUT.WIDTH}x{LAYOUT.HEIGHT}")
@@ -48,32 +38,79 @@ class Framework(Tk):
         )
         self.display.pack(fill=BOTH, expand=True)
 
-        self.timer = Timer(self.clock, SETTINGS.STARTING_SPEED)
+        self.loop_timer = Timer(self.clock, SETTINGS.STARTING_SPEED)
+        self.state_timer = Timer(self.clock, 500, periodic=False, running=False)
+
         self.field = Field(LAYOUT.FIELD_POS, LAYOUT.FIELD_SIZE)
-        self.snake = Snake()
+        self.snake = Snake(self.field)
         self.apple = Apple()
         self.apple.repos(self.field)
+        self.bonus = Bonus(SETTINGS.STARTING_SPEED * (LAYOUT.FIELD_SIZE[0] + LAYOUT.FIELD_SIZE[1]) * 0.8, self.clock)
 
+        self.score = 0
+
+        # INTERFACE #
         self.interface = Interface()
 
+        # header #
         self.header_group = WidgetGroup(self.interface, "Header", active=True)
         self.header = WindowHeader(self.header_group, self)
+        self.close_button = HeaderButton(self.header_group, LAYOUT.CLOSE_BUTTON, COLORS.RED_BUTTON)
 
-        self.menu_group = WidgetGroup(self.interface, "Menu", active=False)
-        self.start_button = Button(self.menu_group, LAYOUT.START_BUTTON, "Start")
+        # menu #
+        self.menu_group = WidgetGroup(self.interface, "Menu")
+        self.start_group = WidgetGroup(self.interface, "Start")
+        self.resume_group = WidgetGroup(self.interface, "Resume")
 
-        self.state = States.GAME
+        self.start_button = Button(self.start_group, LAYOUT.START_BUTTON, "Start", colors=COLORS.GREEN_BUTTON)
+        self.continue_button = Button(self.resume_group, LAYOUT.RESUME_BUTTON, "Continue", colors=COLORS.GREEN_BUTTON)
+        self.restart_button = Button(self.resume_group, LAYOUT.RESTART_BUTTON, "Restart", colors=COLORS.GREEN_BUTTON)
+        self.settings_button = Button(self.menu_group, LAYOUT.SETTINGS_BUTTON, "Settings")
+        self.key_config_button = Button(self.menu_group, LAYOUT.KEY_CONFIG_BUTTON, "Key config")
+        self.high_scores_button = Button(self.menu_group, LAYOUT.HIGH_SCORES_BUTTON, "High scores")
+        self.exit_button = Button(self.menu_group, LAYOUT.EXIT_BUTTON, "Exit", colors=COLORS.RED_BUTTON)
+
+        # settings #
+        self.settings_group = WidgetGroup(self.interface, "Settings")
+        self.settings_return_button = Button(self.settings_group, LAYOUT.SETTINGS_RETURN_BUTTON, "Back",
+                                             colors=COLORS.RED_BUTTON)
+
+        # key config #
+        self.key_config_group = WidgetGroup(self.interface, "Key config")
+        self.key_config_return_button = Button(self.key_config_group, LAYOUT.KEY_CONFIG_RETURN_BUTTON, "Back",
+                                               colors=COLORS.RED_BUTTON)
+
+        # high scores #
+        self.high_scores_group = WidgetGroup(self.interface, "High scores")
+        self.high_scores_return_button = Button(self.high_scores_group, LAYOUT.HIGH_SCORES_RETURN_BUTTON, "Back",
+                                                colors=COLORS.RED_BUTTON)
+
+        StateMachine.__init__(self, Intro(self))
+
+        self.add_state(
+            Menu(self),
+            Start(self),
+            Game(self),
+            GameOver(self),
+            NewHighScore(self),
+            Paused(self),
+            Settings(self),
+            KeyConfig(self),
+            HighScores(self),
+            Outro(self),
+        )
 
         self.loop()
 
     def reset(self):
         self.field.clear()
-        self.snake = Snake()
-        self.apple = Apple()
+        self.snake = Snake(self.field)
+        self.apple.repos(self.field)
 
     def events(self):
 
         self.interface.events(self.event_handler)
+        self.state_events()
 
         if self.event_handler[KEYS.UP, "press"]:
             self.snake.turn(DIRECTION.UP)
@@ -84,32 +121,22 @@ class Framework(Tk):
         if self.event_handler[KEYS.RIGHT, "press"]:
             self.snake.turn(DIRECTION.RIGHT)
 
-        if self.event_handler[KEYS.EXIT, "press"]:
+        if self.close_button.pressed:
             self.running = False
-        if self.event_handler[KEYS.PAUSE, "press"]:
-            self.paused = not self.paused
 
     def logic(self):
-        if self.timer.tick():
-            self.field.update()
-            self.snake.move()
-
-            if self.field[self.snake.position] > 0:
-                self.reset()
-            else:
-                self.field[self.snake.position] = self.snake.length
-
-            if self.snake.position == self.apple.position:
-                self.apple.repos(self.field)
-                self.snake.length += 1
+        if self.loop_timer():
+            self.state_logic()
 
     def render(self):
         self.display.delete("all")
-        self.field.render(self.display)
+        self.display.create_rectangle(*self.field.rect, fill=COLORS.FIELD, outline=COLORS.FIELD)
+        self.state_render(self.display)
         self.interface.render(self.display)
 
     def loop(self):
         self.clock.update()
+        self.update_states()
 
         self.events()
         if not self.paused:

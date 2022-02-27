@@ -3,6 +3,10 @@ from source.tools import Vector
 
 class EventHandler:
 
+    KEYMAP = {
+        "escape": "\x1b"
+    }
+
     def __init__(self, framework):
 
         framework.bind("<Key>", self.key_press)
@@ -23,12 +27,12 @@ class EventHandler:
         self.click = [0, 0, 0]
 
     def key_press(self, event):
-        self._key_hold.add(event.char)
-        self._key_press.add(event.char)
+        self._key_hold.add(event.keycode)
+        self._key_press.add(event.keycode)
 
     def key_release(self, event):
-        if event.char in self._key_hold:
-            self._key_hold.remove(event.char)
+        if event.keycode in self._key_hold:
+            self._key_hold.remove(event.keycode)
 
     def mouse_press(self, event):
         self.click[event.num-1] = 1
@@ -43,9 +47,9 @@ class EventHandler:
 
     def __getitem__(self, key_mode):
         key, mode = key_mode
-        if key == "escape":
-            key = "\x1b"
+        if key in self.KEYMAP:
+            key = self.KEYMAP[key]
         if mode == "press":
-            return key in self._key_press
+            return ord(key.upper()) in self._key_press
         elif mode == "hold":
-            return key in self._key_hold
+            return ord(key.upper()) in self._key_hold

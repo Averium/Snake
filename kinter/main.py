@@ -10,13 +10,15 @@ if __name__ == "__main__":
     main()
 
 
+# FIXME:
+#  Snake can bite its head after turning very quickly
+#  Bonus timers are still counting down while the game is paused
+
 # TODO:
-#  Exit button in corner
-#  State machine implementation (non periodic timer implementation)
-#  Basic interface implementation
-#  Event handler update (use key codes instead of names)
-#  Input queue for turn
-#  Animations in non-game states
-#  Settings implementation
+#  Fade background when menus are visible
+#  Settings implementation (speed slider, walls switch)
 #  High score system implementation (input field widget)
+#  Different bonus items with effects on snake/gameplay
+#  -----------------------------------------------------
 #  Light/Dark theme
+#  Intro, Outro

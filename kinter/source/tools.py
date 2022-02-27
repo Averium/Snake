@@ -3,7 +3,10 @@
 class Vector(list):
 
     def __init__(self, x=0, y=0):
-        list.__init__(self, [x, y])
+        if isinstance(x, (list, tuple)):
+            list.__init__(self, x)
+        else:
+            list.__init__(self, [x, y])
 
     def __add__(self, other):
         if isinstance(other, list):
@@ -20,6 +23,7 @@ class Vector(list):
     def __mul__(self, other): return Vector(self.x * other, self.y * other)
     def __truediv__(self, other): return Vector(self.x / other, self.y / other)
     def __neg__(self): return Vector(-self.x, -self.y)
+    def __bool__(self): return self.x != 0 or self.y != 0
 
     @property
     def x(self): return self[0]
@@ -62,7 +66,6 @@ class Matrix:
 
             if self._index[1] >= self._height:
                 raise StopIteration
-
         return self[self._index], self._index[:]
 
 
@@ -134,3 +137,10 @@ class Rectangle:
     @bottom.setter
     def bottom(self, value):
         self.pos.y = value - self.height
+
+
+class DIRECTION:
+    UP = Vector(0, -1)
+    DOWN = Vector(0, 1)
+    LEFT = Vector(-1, 0)
+    RIGHT = Vector(1, 0)
