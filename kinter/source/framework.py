@@ -1,16 +1,16 @@
-from enum import Enum, auto
 from tkinter import Tk, Canvas, BOTH
+from tkinter import Tk, Canvas, BOTH
+from tkinter.font import Font
 
 from source.clock import Clock, Timer
 from source.events import EventHandler
 from source.game import (
-    Vector, Field, Snake, Apple, Bonus, Intro, Menu, Start, Game, GameOver, NewHighScore, Paused, Settings,
+    Field, Snake, Apple, Bonus, Intro, Menu, Start, Game, GameOver, NewHighScore, Paused, Settings,
     KeyConfig, HighScores, Outro
 )
-from source.interface import Interface, WidgetGroup, Button, WindowHeader, HeaderButton
-from source.settings import SETTINGS, COLORS, KEYS, LAYOUT
+from source.interface import Widget, Interface, WidgetGroup, Button, WindowHeader, HeaderButton, TextLabel
+from source.settings import SETTINGS, COLORS, LAYOUT
 from source.state_machine import StateMachine
-from source.tools import DIRECTION
 
 
 class Framework(Tk, StateMachine):
@@ -18,6 +18,7 @@ class Framework(Tk, StateMachine):
     def __init__(self):
 
         Tk.__init__(self)
+        TextLabel.FONT = [Font(family=LAYOUT.FONT, size=size, weight="bold") for size in LAYOUT.FONT_SIZES]
 
         self.resizable(False, False)
         self.geometry(f"{LAYOUT.WIDTH}x{LAYOUT.HEIGHT}")
@@ -49,7 +50,7 @@ class Framework(Tk, StateMachine):
 
         self.score = 0
 
-        # INTERFACE #
+        # --- INTERFACE ---------------------------------------------------------------------------------------------- #
         self.interface = Interface()
 
         # header #
@@ -62,7 +63,8 @@ class Framework(Tk, StateMachine):
         self.start_group = WidgetGroup(self.interface, "Start")
         self.resume_group = WidgetGroup(self.interface, "Resume")
 
-        self.start_button = Button(self.start_group, LAYOUT.START_BUTTON, "Start", colors=COLORS.GREEN_BUTTON)
+        self.start_button = Button(self.start_group, LAYOUT.START_BUTTON, "Play", colors=COLORS.GREEN_BUTTON,
+                                   text_size=2)
         self.continue_button = Button(self.resume_group, LAYOUT.RESUME_BUTTON, "Continue", colors=COLORS.GREEN_BUTTON)
         self.restart_button = Button(self.resume_group, LAYOUT.RESTART_BUTTON, "Restart", colors=COLORS.GREEN_BUTTON)
         self.settings_button = Button(self.menu_group, LAYOUT.SETTINGS_BUTTON, "Settings")
@@ -84,6 +86,21 @@ class Framework(Tk, StateMachine):
         self.high_scores_group = WidgetGroup(self.interface, "High scores")
         self.high_scores_return_button = Button(self.high_scores_group, LAYOUT.HIGH_SCORES_RETURN_BUTTON, "Back",
                                                 colors=COLORS.RED_BUTTON)
+
+        # start #
+        self.start_game_group = WidgetGroup(self.interface, "Start game")
+        self.start_game_label = TextLabel(self.start_game_group, LAYOUT.START_GAME_LABEL, "Press any key to start",
+                                          text_size=0, color=COLORS.WHITE_LABEL)
+
+        # game over #
+        self.game_over_group = WidgetGroup(self.interface, "Start game")
+        self.game_over_label = TextLabel(self.game_over_group, LAYOUT.GAME_OVER_LABEL, "Game over", text_size=2,
+                                         color=COLORS.RED_LABEL)
+        self.game_over_menu_button = Button(self.game_over_group, LAYOUT.GAME_OVER_MENU_BUTTON, "Menu")
+        self.game_over_restart_button = Button(self.game_over_group, LAYOUT.GAME_OVER_RESTART_BUTTON, "Play again",
+                                               colors=COLORS.GREEN_BUTTON)
+
+        # --- STATE MACHINE ------------------------------------------------------------------------------------------ #
 
         StateMachine.__init__(self, Intro(self))
 
@@ -110,16 +127,7 @@ class Framework(Tk, StateMachine):
     def events(self):
 
         self.interface.events(self.event_handler)
-        self.state_events()
-
-        if self.event_handler[KEYS.UP, "press"]:
-            self.snake.turn(DIRECTION.UP)
-        if self.event_handler[KEYS.DOWN, "press"]:
-            self.snake.turn(DIRECTION.DOWN)
-        if self.event_handler[KEYS.LEFT, "press"]:
-            self.snake.turn(DIRECTION.LEFT)
-        if self.event_handler[KEYS.RIGHT, "press"]:
-            self.snake.turn(DIRECTION.RIGHT)
+        self.state_events(self.event_handler)
 
         if self.close_button.pressed:
             self.running = False
@@ -130,7 +138,7 @@ class Framework(Tk, StateMachine):
 
     def render(self):
         self.display.delete("all")
-        self.display.create_rectangle(*self.field.rect, fill=COLORS.FIELD, outline=COLORS.FIELD)
+        self.field.render_background(self.display)
         self.state_render(self.display)
         self.interface.render(self.display)
 

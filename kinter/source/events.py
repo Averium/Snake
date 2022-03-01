@@ -46,6 +46,9 @@ class EventHandler:
         self.focus = Vector(event.x, event.y)
 
     def __getitem__(self, key_mode):
+        if key_mode == "any":
+            return self._key_hold
+
         key, mode = key_mode
         if key in self.KEYMAP:
             key = self.KEYMAP[key]

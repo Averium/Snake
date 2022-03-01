@@ -72,6 +72,12 @@ class Field(Matrix, Rectangle):
                 color = COLORS.BONUS[item+3]
                 display.create_rectangle(*self.tile_rect(at, 5+item), fill=color, outline=COLORS.FIELD)
 
+    def render_background(self, display):
+        display.create_rectangle(*self.rect, fill=COLORS.FIELD, outline=COLORS.FIELD)
+
+    def fade_content(self, display):
+        display.create_rectangle(*self.rect, fill=COLORS.FADE, outline=COLORS.FADE, stipple='gray50')
+
 
 class Snake:
 
@@ -156,6 +162,10 @@ class Bonus(Apple):
     def active(self):
         return self._active
 
+    def freeze(self):
+        self._lifetime_timer.freeze()
+        self._animation_timer.freeze()
+
 
 # === [ Game states ] ================================================================================================ #
 
@@ -171,12 +181,6 @@ class States:
     KEY_CONFIG = "Key config"
     HIGH_SCORES = "High scores"
     OUTRO = "Outro"
-
-
-class GameState(State):
-
-    def render(self, display):
-        self.state_machine.field.render(display, self.state_machine.snake)
 
 
 class Intro(State):
@@ -225,7 +229,7 @@ class Menu(State):
         self.state_machine.interface.deactivate(self.state_machine.start_group)
 
 
-class Start(GameState):
+class Start(State):
     """
     Direction key pressed -> Game
     """
@@ -234,19 +238,21 @@ class Start(GameState):
         super().__init__(States.START, state_machine)
 
     def check_conditions(self):
-        if any((
-            self.state_machine.event_handler[KEYS.UP, "hold"],
-            self.state_machine.event_handler[KEYS.DOWN, "hold"],
-            self.state_machine.event_handler[KEYS.LEFT, "hold"],
-            self.state_machine.event_handler[KEYS.RIGHT, "hold"],
-        )):
+        if self.state_machine.event_handler["any"]:
             return States.GAME
 
     def entry_actions(self):
         self.state_machine.reset()
+        self.state_machine.interface.activate(self.state_machine.start_game_group)
+
+    def exit_actions(self):
+        self.state_machine.interface.deactivate(self.state_machine.start_game_group)
+
+    def render(self, display):
+        self.state_machine.field.render(display, self.state_machine.snake)
 
 
-class Game(GameState):
+class Game(State):
     """
     p key or escape pressed -> Paused
     lose condition -> GameOver
@@ -255,44 +261,58 @@ class Game(GameState):
 
     def __init__(self, state_machine):
         super().__init__(States.GAME, state_machine)
+        self._game_over = False
 
     def check_conditions(self):
-        temp = False
         if self.state_machine.event_handler[KEYS.PAUSE, "press"] or \
                 self.state_machine.event_handler[KEYS.EXIT, "press"]:
             return States.PAUSED
-        if temp:
-            if temp:
+        if self._game_over:
+            high_score = False
+            if high_score:
                 return States.NEW_HIGH_SCORE
             else:
                 return States.GAME_OVER
 
+    def entry_actions(self):
+        self._game_over = False
+
+    def events(self, event_handler):
+        if event_handler[KEYS.UP, "press"]:
+            self.state_machine.snake.turn(DIRECTION.UP)
+        if event_handler[KEYS.DOWN, "press"]:
+            self.state_machine.snake.turn(DIRECTION.DOWN)
+        if event_handler[KEYS.LEFT, "press"]:
+            self.state_machine.snake.turn(DIRECTION.LEFT)
+        if event_handler[KEYS.RIGHT, "press"]:
+            self.state_machine.snake.turn(DIRECTION.RIGHT)
+
     def logic(self):
-        game = self.state_machine
 
-        game.field.update()
-        game.bonus.update(game.field)
-        game.snake.move()
+        self.state_machine.field.update()
+        self.state_machine.bonus.update(self.state_machine.field)
+        self.state_machine.snake.move()
 
-        if game.field[game.snake.position] > 0:
-            game.reset()
-        else:
-            game.field[game.snake.position] = game.snake.length
+        if self.state_machine.field[self.state_machine.snake.position] > 0:
+            self._game_over = True
+        self.state_machine.field[self.state_machine.snake.position] = self.state_machine.snake.length
 
-        if game.snake.position == game.apple.position:
-            game.apple.repos(game.field)
-            game.snake.length += 1
-            game.score += 1
-            game.field[game.snake.position] = game.snake.length
-            if not game.bonus.active and random() < SETTINGS.BONUS_CHANCE:
-                game.bonus.activate(game.field)
-        if game.bonus.active and game.snake.position == game.bonus.position:
-            game.bonus.deactivate()
-            game.snake.length += 1
-            game.score += 5
+        if self.state_machine.snake.position == self.state_machine.apple.position:
+            self.state_machine.apple.repos(self.state_machine.field)
+            self.state_machine.snake.length += 1
+            self.state_machine.score += SETTINGS.APPLE_SCORE
+            self.state_machine.field[self.state_machine.snake.position] = self.state_machine.snake.length
+            if not self.state_machine.bonus.active and random() < SETTINGS.BONUS_CHANCE:
+                self.state_machine.bonus.activate(self.state_machine.field)
+        if self.state_machine.bonus.active and self.state_machine.snake.position == self.state_machine.bonus.position:
+            self.state_machine.bonus.deactivate()
+            self.state_machine.score += SETTINGS.BONUS_SCORE
+
+    def render(self, display):
+        self.state_machine.field.render(display, self.state_machine.snake)
 
 
-class GameOver(GameState):
+class GameOver(State):
     """
     Play again pressed -> Start
     Menu pressed -> Menu
@@ -302,10 +322,23 @@ class GameOver(GameState):
         super().__init__(States.GAME_OVER, state_machine)
 
     def check_conditions(self):
-        pass
+        if self.state_machine.game_over_restart_button.pressed:
+            return States.START
+        if self.state_machine.game_over_menu_button.pressed:
+            return States.MENU
+
+    def entry_actions(self):
+        self.state_machine.interface.activate(self.state_machine.game_over_group)
+
+    def exit_actions(self):
+        self.state_machine.interface.deactivate(self.state_machine.game_over_group)
+
+    def render(self, display):
+        self.state_machine.field.render(display, self.state_machine.snake)
+        self.state_machine.field.fade_content(display)
 
 
-class NewHighScore(GameState):
+class NewHighScore(State):
     """
     Play again pressed -> Start
     Menu pressed -> Menu
@@ -317,8 +350,18 @@ class NewHighScore(GameState):
     def check_conditions(self):
         pass
 
+    def entry_actions(self):
+        self.state_machine.interface.activate(self.state_machine.game_over_group)
 
-class Paused(GameState):
+    def exit_actions(self):
+        self.state_machine.interface.deactivate(self.state_machine.game_over_group)
+
+    def render(self, display):
+        self.state_machine.field.render(display, self.state_machine.snake)
+        self.state_machine.field.fade_content(display)
+
+
+class Paused(State):
     """
     Continue pressed -> Game
     Restart pressed -> Start
@@ -332,7 +375,8 @@ class Paused(GameState):
         super().__init__(States.PAUSED, state_machine)
 
     def check_conditions(self):
-        if self.state_machine.event_handler[KEYS.PAUSE, "press"] or self.state_machine.continue_button.pressed:
+        if self.state_machine.event_handler[KEYS.PAUSE, "press"] or self.state_machine.continue_button.pressed or \
+                self.state_machine.event_handler[KEYS.EXIT, "press"]:
             return States.GAME
         if self.state_machine.restart_button.pressed:
             return States.START
@@ -342,7 +386,7 @@ class Paused(GameState):
             return States.KEY_CONFIG
         if self.state_machine.high_scores_button.pressed:
             return States.HIGH_SCORES
-        if self.state_machine.event_handler[KEYS.EXIT, "press"] or self.state_machine.exit_button.pressed:
+        if self.state_machine.exit_button.pressed:
             return States.OUTRO
 
     def entry_actions(self):
@@ -352,6 +396,13 @@ class Paused(GameState):
     def exit_actions(self):
         self.state_machine.interface.deactivate(self.state_machine.menu_group)
         self.state_machine.interface.deactivate(self.state_machine.resume_group)
+
+    def events(self, event_handler):
+        self.state_machine.bonus.freeze()
+
+    def render(self, display):
+        self.state_machine.field.render(display, self.state_machine.snake)
+        self.state_machine.field.fade_content(display)
 
 
 class Settings(State):

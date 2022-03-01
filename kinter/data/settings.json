@@ -1,6 +1,9 @@
 {
-  "FPS": 60,
+  "FPS": 30,
   "STARTING_LENGTH": 3,
   "STARTING_SPEED": 200,
-  "BONUS_CHANCE": 0.1
+  "BONUS_CHANCE": 0.05,
+
+  "APPLE_SCORE": 5,
+  "BONUS_SCORE": 10
 }

@@ -29,8 +29,8 @@ class Timer:
         self._running = running
 
     def __call__(self):
-        if self._running and self._clock.now - self._period > self._mark:
-            self._mark = self._clock.now
+        if self._running and self._clock.now - self._period >= self._mark:
+            self._mark += self._period
             self._running = self._periodic
             return True
         else:
@@ -42,3 +42,6 @@ class Timer:
 
     def stop(self):
         self._running = False
+
+    def freeze(self):
+        self._mark += self._clock.dt

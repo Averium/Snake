@@ -1,12 +1,16 @@
 {
   "BACKGROUND": "#202020",
+  "FADE": "#000000",
   "HEADER": "#303030",
   "FIELD": "#101010",
   "SNAKE": "#159410",
   "PATTERN": "#004000",
   "APPLE": "#b00000",
   "BONUS": ["#6060f0", "#3030f0"],
-  "WHITE_BUTTON": ["#999999", "#d1d1d1"],
+  "WHITE_BUTTON": ["#808080", "#d1d1d1"],
   "RED_BUTTON": ["#900000", "#ff0000"],
-  "GREEN_BUTTON": ["#007000", "#00cc00"]
+  "GREEN_BUTTON": ["#007000", "#00cc00"],
+  "WHITE_LABEL": "#808080",
+  "GREEN_LABEL": "#007000",
+  "RED_LABEL": "#900000"
 }

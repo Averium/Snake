@@ -12,13 +12,21 @@ if __name__ == "__main__":
 
 # FIXME:
 #  Snake can bite its head after turning very quickly
-#  Bonus timers are still counting down while the game is paused
 
 # TODO:
-#  Fade background when menus are visible
+#  - [ BASIC ] ----------------------------------------------
+#  Interface update with more labels
+#  Info panel implementation (score label, speed, statistics)
 #  Settings implementation (speed slider, walls switch)
+#  Moving bonus
 #  High score system implementation (input field widget)
-#  Different bonus items with effects on snake/gameplay
-#  -----------------------------------------------------
 #  Light/Dark theme
+#  - [ GAMEPLAY ] -------------------------------------------
+#  Multiple levels with increasing speed
+#  Different bonus items on higher levels
+#  Enemy snake event on higher levels
 #  Intro, Outro
+#  - [ PLAYERS ] --------------------------------------------
+#  Profiles and login
+#  Personal settings
+#  Snake customization

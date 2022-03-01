@@ -74,7 +74,6 @@ class StateMachine(ABC):
         self._last = self._active
         self._active = self._states[name]
         self._active.entry_actions()
-        print(f"CURRENT STATE: {name}")
 
     def update_states(self) -> None:
         """ Method for handling state actions, and state transitions """

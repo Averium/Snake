@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from tkinter.font import Font
 
 from source.settings import COLORS, LAYOUT
 from source.tools import Vector, Rectangle
@@ -50,6 +49,8 @@ class WidgetGroup(list):
 
 class Widget(Rectangle, ABC):
 
+    FONT = []
+
     def __init__(self, group: WidgetGroup, dim: (int, int, int, int)):
         Rectangle.__init__(self, *dim)
         group.append(self)
@@ -57,12 +58,6 @@ class Widget(Rectangle, ABC):
         self.hovered = False
         self.entered = False
         self.last_hovered = False
-
-        self.font = Font(family=LAYOUT.FONT, size=LAYOUT.FONT_SIZE, weight="bold")
-
-    @classmethod
-    def text(cls, display, pos, text, color, size=24):
-        display.create_text(*pos, text, fill=color, size=size, justify="center")
 
     def events(self, event_handler):
         self.hovered = self.focused(event_handler.focus)
@@ -99,41 +94,39 @@ class WindowHeader(Widget):
         display.create_rectangle(*self.rect, fill=COLORS.HEADER, outline=COLORS.HEADER)
 
 
-class Label(Widget):
+class TextLabel(Widget):
 
-    def __init__(
-            self,
-            group: WidgetGroup,
-            pos: (int, int),
-            text: str,
-            color: (int, int, int),
-            alignment: str = "center",
-    ):
-        super().__init__(group, [*pos, *self.text_size(text, size=32)])
-        self.pos = pos
+    FONT = []
+
+    def __init__(self, group: WidgetGroup, pos: (int, int), text: str, text_size: int, color: str):
+        super().__init__(group, (*pos, 0, 0))
+        self.text = None
+        self.text_size = text_size
+        self.update_text(text)
         self.color = color
-        self.alignment = alignment
-
-    def render(self, surface):
-        pass
+        self.center = pos
 
     def update_text(self, text):
-        pass
-
-
-class Button(Widget):
-
-    def __init__(self, group, pos, text: str, colors: (tuple, tuple) = COLORS.WHITE_BUTTON):
-        super().__init__(group, (*pos, 0, 0))
-        if text:
+        if text is not None:
+            self.text = text
             width = self.font.measure(text)
             height = self.font.metrics("linespace")
             self.resize(width, height)
-            self.move(-Vector(width/2, height/2))
+            self.move(-Vector(width / 2, height / 2))
 
-        self.text = text
+    def render(self, display):
+        display.create_text(*self.center, text=self.text, justify="center", fill=self.color, font=self.font)
+
+    @property
+    def font(self):
+        return self.FONT[self.text_size]
+
+
+class Button(TextLabel):
+
+    def __init__(self, group, pos, text: str = None, text_size: int = 0, colors: (str, str) = COLORS.WHITE_BUTTON):
+        super().__init__(group, pos, text, text_size, colors)
         self.pressed = False
-        self.colors = colors
 
     def events(self, event_handler):
         super().events(event_handler)
@@ -143,18 +136,18 @@ class Button(Widget):
             pass  # Mixer.play("blip")
 
     def render(self, display):
-        color = self.colors[self.hovered]
+        color = self.color[self.hovered]
         display.create_text(*self.center, text=self.text, justify="center", fill=color, font=self.font)
 
 
 class HeaderButton(Button):
 
     def __init__(self, group, pos, colors):
-        super().__init__(group, pos, "", colors)
+        super().__init__(group, pos, colors=colors)
         self.resize(LAYOUT.TILE - LAYOUT.GAP * 8, LAYOUT.TILE - LAYOUT.GAP * 8)
 
     def render(self, display):
-        color = self.colors[self.hovered]
+        color = self.color[self.hovered]
         display.create_rectangle(*self.rect, fill=color, outline=color)
 
 
