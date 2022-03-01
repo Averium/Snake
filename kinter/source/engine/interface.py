@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-from source.settings import COLORS, LAYOUT
-from source.tools import Vector, Rectangle
+from source.engine.settings import COLORS, LAYOUT
+from source.engine.tools import Vector, Rectangle
 
 
 class Interface:
@@ -85,10 +85,12 @@ class WindowHeader(Widget):
         if self.hovered and event_handler.hold[0]:
             if self.grab is None:
                 self.grab = event_handler.focus
+        if not event_handler.hold[0]:
+            self.grab = None
+
+        if self.grab is not None:
             window_focus = Vector(*self.framework.winfo_pointerxy()) - self.grab
             self.framework.geometry(f"+{window_focus.x}+{window_focus.y}")
-        else:
-            self.grab = None
 
     def render(self, display):
         display.create_rectangle(*self.rect, fill=COLORS.HEADER, outline=COLORS.HEADER)
@@ -98,13 +100,15 @@ class TextLabel(Widget):
 
     FONT = []
 
-    def __init__(self, group: WidgetGroup, pos: (int, int), text: str, text_size: int, color: str):
+    def __init__(self, group: WidgetGroup, pos: (int, int), text: str, text_size: int, color: str, align="center"):
         super().__init__(group, (*pos, 0, 0))
-        self.text = None
-        self.text_size = text_size
-        self.update_text(text)
+        self.position = Vector(*pos)
+        self.align = align
         self.color = color
-        self.center = pos
+        self.text_size = text_size
+        self.text = None
+
+        self.update_text(text)
 
     def update_text(self, text):
         if text is not None:
@@ -112,7 +116,7 @@ class TextLabel(Widget):
             width = self.font.measure(text)
             height = self.font.metrics("linespace")
             self.resize(width, height)
-            self.move(-Vector(width / 2, height / 2))
+            setattr(self, self.align, self.position)
 
     def render(self, display):
         display.create_text(*self.center, text=self.text, justify="center", fill=self.color, font=self.font)

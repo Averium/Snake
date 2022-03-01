@@ -2,15 +2,15 @@ from tkinter import Tk, Canvas, BOTH
 from tkinter import Tk, Canvas, BOTH
 from tkinter.font import Font
 
-from source.clock import Clock, Timer
-from source.events import EventHandler
-from source.game import (
-    Field, Snake, Apple, Bonus, Intro, Menu, Start, Game, GameOver, NewHighScore, Paused, Settings,
-    KeyConfig, HighScores, Outro
+from source.engine.clock import Clock, Timer
+from source.engine.events import EventHandler
+from source.game.game_objects import Field, Snake, Apple, Bonus
+from source.game.game_states import (
+    Intro, Menu, Start, Game, GameOver, NewHighScore, Paused, Settings, KeyConfig, HighScores, Outro
 )
-from source.interface import Widget, Interface, WidgetGroup, Button, WindowHeader, HeaderButton, TextLabel
-from source.settings import SETTINGS, COLORS, LAYOUT
-from source.state_machine import StateMachine
+from source.engine.interface import Widget, Interface, WidgetGroup, Button, WindowHeader, HeaderButton, TextLabel
+from source.engine.settings import SETTINGS, COLORS, LAYOUT
+from source.engine.state_machine import StateMachine
 
 
 class Framework(Tk, StateMachine):
@@ -19,6 +19,8 @@ class Framework(Tk, StateMachine):
 
         Tk.__init__(self)
         TextLabel.FONT = [Font(family=LAYOUT.FONT, size=size, weight="bold") for size in LAYOUT.FONT_SIZES]
+        fancy_font = Font(family=LAYOUT.FANCY_FONT, size=LAYOUT.FONT_SIZES[-1], slant="italic", underline=True)
+        TextLabel.FONT.append(fancy_font)
 
         self.resizable(False, False)
         self.geometry(f"{LAYOUT.WIDTH}x{LAYOUT.HEIGHT}")
@@ -46,9 +48,11 @@ class Framework(Tk, StateMachine):
         self.snake = Snake(self.field)
         self.apple = Apple()
         self.apple.repos(self.field)
-        self.bonus = Bonus(SETTINGS.STARTING_SPEED * (LAYOUT.FIELD_SIZE[0] + LAYOUT.FIELD_SIZE[1]) * 0.8, self.clock)
+        self.bonus = Bonus(self.snake.delays[5] * (LAYOUT.FIELD_SIZE[0] + LAYOUT.FIELD_SIZE[1]) * 0.8, self.clock)
 
         self.score = 0
+        self.speed = SETTINGS.STARTING_SPEED
+        self.loop_timer.set(self.snake.delays[self.speed])
 
         # --- INTERFACE ---------------------------------------------------------------------------------------------- #
         self.interface = Interface()
@@ -57,6 +61,17 @@ class Framework(Tk, StateMachine):
         self.header_group = WidgetGroup(self.interface, "Header", active=True)
         self.header = WindowHeader(self.header_group, self)
         self.close_button = HeaderButton(self.header_group, LAYOUT.CLOSE_BUTTON, COLORS.RED_BUTTON)
+
+        # panel #
+        self.panel_group = WidgetGroup(self.interface, "Panel", active=True)
+        self.title_label = TextLabel(self.panel_group, LAYOUT.TITLE_LABEL, "Snake", 3, COLORS.GREEN_LABEL)
+        self.score_label = TextLabel(self.panel_group, LAYOUT.SCORE_LABEL, "Score: ", 0, COLORS.WHITE_LABEL, "midleft")
+        self.score_value_label = TextLabel(self.panel_group, LAYOUT.SCORE_VALUE_LABEL, "0", 1, COLORS.RED_LABEL,
+                                           "midright")
+        self.speed_label = TextLabel(self.panel_group, LAYOUT.SPEED_LABEL, "Speed: ", 0, COLORS.WHITE_LABEL, "midleft")
+        self.speed_value_label = TextLabel(self.panel_group, LAYOUT.SPEED_VALUE_LABEL, str(self.speed), 1,
+                                           COLORS.RED_LABEL, "midright")
+        self.stat_label = TextLabel(self.panel_group, LAYOUT.STAT_LABEL, "Statistics", 0, COLORS.GREEN_LABEL)
 
         # menu #
         self.menu_group = WidgetGroup(self.interface, "Menu")
@@ -121,7 +136,7 @@ class Framework(Tk, StateMachine):
 
     def reset(self):
         self.field.clear()
-        self.snake = Snake(self.field)
+        self.snake.reset(self.field)
         self.apple.repos(self.field)
 
     def events(self):

@@ -1,6 +1,7 @@
 {
   "FONT_SIZES": [24, 28, 42],
   "FONT": "Courier",
+  "FANCY_FONT": "Harlow Solid Italic",
 
   "WIDTH": 896,
   "HEIGHT": 672,
@@ -14,6 +15,13 @@
   "GAP": 2,
 
   "CLOSE_BUTTON": [870, 8],
+
+  "TITLE_LABEL": [768, 90],
+  "SCORE_LABEL": [670, 200],
+  "SCORE_VALUE_LABEL": [866, 200],
+  "SPEED_LABEL": [670, 240],
+  "SPEED_VALUE_LABEL": [866, 240],
+  "STAT_LABEL": [768, 340],
 
   "START_BUTTON": [320, 260],
   "RESUME_BUTTON": [320, 260],

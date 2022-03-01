@@ -45,3 +45,6 @@ class Timer:
 
     def freeze(self):
         self._mark += self._clock.dt
+
+    def set(self, delay):
+        self._period = delay / 1000

@@ -1,4 +1,4 @@
-from source.framework import Framework
+from kinter.source.engine.framework import Framework
 
 
 def main():
@@ -10,23 +10,19 @@ if __name__ == "__main__":
     main()
 
 
-# FIXME:
-#  Snake can bite its head after turning very quickly
-
 # TODO:
-#  - [ BASIC ] ----------------------------------------------
+#  - [ BASIC ] -------------------------------------------------
 #  Interface update with more labels
-#  Info panel implementation (score label, speed, statistics)
+#  Statistics interface
 #  Settings implementation (speed slider, walls switch)
-#  Moving bonus
 #  High score system implementation (input field widget)
 #  Light/Dark theme
-#  - [ GAMEPLAY ] -------------------------------------------
+#  - [ GAMEPLAY ] ----------------------------------------------
 #  Multiple levels with increasing speed
-#  Different bonus items on higher levels
+#  Different bonus items on higher levels (moving bonus, debuff)
 #  Enemy snake event on higher levels
 #  Intro, Outro
-#  - [ PLAYERS ] --------------------------------------------
+#  - [ PLAYERS ] -----------------------------------------------
 #  Profiles and login
 #  Personal settings
 #  Snake customization

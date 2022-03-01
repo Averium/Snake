@@ -99,14 +99,6 @@ class Rectangle:
         return self.left, self.top, self.right, self.bottom
 
     @property
-    def center(self):
-        return self.pos + Vector(self.width/2, self.height/2)
-
-    @center.setter
-    def center(self, value):
-        self.pos = Vector(*value) - Vector(self.width/2, self.height/2)
-
-    @property
     def left(self):
         return self.pos.x
 
@@ -137,6 +129,30 @@ class Rectangle:
     @bottom.setter
     def bottom(self, value):
         self.pos.y = value - self.height
+
+    @property
+    def center(self):
+        return self.pos + Vector(self.width/2, self.height/2)
+
+    @center.setter
+    def center(self, value):
+        self.pos = Vector(*value) - Vector(self.width/2, self.height/2)
+
+    @property
+    def midleft(self):
+        return self.pos + Vector(0, self.height/2)
+
+    @midleft.setter
+    def midleft(self, value):
+        self.pos = Vector(*value) - Vector(0, self.height/2)
+
+    @property
+    def midright(self):
+        return self.pos + Vector(self.width, self.height/2)
+
+    @midright.setter
+    def midright(self, value):
+        self.pos = Vector(*value) - Vector(self.width, self.height/2)
 
 
 class DIRECTION:
