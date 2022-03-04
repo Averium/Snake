@@ -2,7 +2,7 @@ from random import choice, randrange
 
 from source.engine.clock import Timer
 from source.engine.settings import SETTINGS, COLORS, LAYOUT
-from source.engine.tools import Vector, Matrix, Rectangle, DIRECTION
+from source.engine.tools import Vector, Matrix, Rectangle, Direction
 
 
 class Field(Matrix, Rectangle):
@@ -80,13 +80,17 @@ class Snake:
     def __init__(self, field):
         self.position = self.direction = self.heading = self.stats = self.length = self.speed = None
         self.reset(field)
-        self.delays = {i: self.delay(i) for i in range(SETTINGS.SPEED_MAPPING[0], SETTINGS.SPEED_MAPPING[1])}
+        self.delays = {i: self.delay(i) for i in range(SETTINGS.SPEED_MAPPING[0], SETTINGS.SPEED_MAPPING[1]+1)}
 
         self.turn_queue = []
 
+    @property
+    def next_position(self):
+        return self.position + self.direction
+
     def reset(self, field):
         self.position = Vector(randrange(LAYOUT.FIELD_SIZE[0] - 8) + 4, randrange(LAYOUT.FIELD_SIZE[1] - 8) + 4)
-        self.direction = choice((DIRECTION.LEFT, DIRECTION.RIGHT, DIRECTION.UP, DIRECTION.DOWN))
+        self.direction = choice((Direction.LEFT, Direction.RIGHT, Direction.UP, Direction.DOWN))
         self.heading = Vector(self.direction)
         self.length = SETTINGS.STARTING_LENGTH
         self.speed = SETTINGS.STARTING_SPEED
@@ -95,21 +99,13 @@ class Snake:
         for tile in range(self.length):
             field[self.position - self.direction * tile] = self.length - tile
 
-    def move(self):
+    def change_direction(self):
         if self.turn_queue and (direction := self.turn_queue.pop(0)) != -self.direction:
             self.direction = direction
 
+    def move(self):
         self.position = self.position + self.direction
         self.heading = Vector(self.direction)
-
-        if self.position.x >= LAYOUT.FIELD_SIZE[0]:
-            self.position.x = 0
-        if self.position.x < 0:
-            self.position.x = LAYOUT.FIELD_SIZE[0] - 1
-        if self.position.y >= LAYOUT.FIELD_SIZE[1]:
-            self.position.y = 0
-        if self.position.y < 0:
-            self.position.y = LAYOUT.FIELD_SIZE[1] - 1
 
     def turn(self, direction):
         self.turn_queue.append(direction)
@@ -118,11 +114,9 @@ class Snake:
 
     @staticmethod
     def delay(speed):
-        lim = SETTINGS.SPEED_MAPPING
-        m = (lim[2] - lim[3]) / (lim[0] - lim[1])
-        b = lim[2] - (lim[2] - lim[3]) * lim[0] / (lim[0] - lim[1])
-        delay = m * min(max(speed, lim[0]), lim[1]) + b
-        return round(delay)
+        start, end, high, low = SETTINGS.SPEED_MAPPING
+        multiply = (low/high) ** (1.0/(end-start))
+        return high * multiply ** (speed-start)
 
 
 class Apple:

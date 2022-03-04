@@ -77,10 +77,10 @@ class Rectangle:
         self.height = height
 
     def move(self, vector):
-        self.pos = self.pos + vector
+        self.pos = self.pos + Vector(vector)
 
     def repos(self, vector):
-        self.pos = vector
+        self.pos = Vector(vector)
 
     def resize(self, width, height):
         self.width = width
@@ -155,7 +155,7 @@ class Rectangle:
         self.pos = Vector(*value) - Vector(self.width, self.height/2)
 
 
-class DIRECTION:
+class Direction:
     UP = Vector(0, -1)
     DOWN = Vector(0, 1)
     LEFT = Vector(-1, 0)

@@ -12,10 +12,9 @@ if __name__ == "__main__":
 
 # TODO:
 #  - [ BASIC ] -------------------------------------------------
-#  Interface update with more labels
 #  Statistics interface
-#  Settings implementation (speed slider, walls switch)
 #  High score system implementation (input field widget)
+#  Key config implementation (buttons with changing text)
 #  Light/Dark theme
 #  - [ GAMEPLAY ] ----------------------------------------------
 #  Multiple levels with increasing speed

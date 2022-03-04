@@ -1,8 +1,8 @@
 from random import random
 
-from source.engine.settings import SETTINGS, KEYS
+from source.engine.settings import SETTINGS, KEYS, LAYOUT
 from source.engine.state_machine import State
-from source.engine.tools import DIRECTION
+from source.engine.tools import Direction
 
 
 class States:
@@ -120,22 +120,40 @@ class Game(State):
 
     def events(self, event_handler):
         if event_handler[KEYS.UP, "press"]:
-            self.state_machine.snake.turn(DIRECTION.UP)
+            self.state_machine.snake.turn(Direction.UP)
         if event_handler[KEYS.DOWN, "press"]:
-            self.state_machine.snake.turn(DIRECTION.DOWN)
+            self.state_machine.snake.turn(Direction.DOWN)
         if event_handler[KEYS.LEFT, "press"]:
-            self.state_machine.snake.turn(DIRECTION.LEFT)
+            self.state_machine.snake.turn(Direction.LEFT)
         if event_handler[KEYS.RIGHT, "press"]:
-            self.state_machine.snake.turn(DIRECTION.RIGHT)
+            self.state_machine.snake.turn(Direction.RIGHT)
 
     def logic(self):
 
+        self.state_machine.snake.change_direction()
+        p = self.state_machine.snake.next_position
+
+        if self.state_machine.walls and not (LAYOUT.FIELD_SIZE[0] > p.x >= 0 and LAYOUT.FIELD_SIZE[1] > p.y >= 0):
+            self._game_over = True
+            return
+
         self.state_machine.field.update()
         self.state_machine.bonus.update(self.state_machine.field)
+
         self.state_machine.snake.move()
+
+        if self.state_machine.snake.position.x >= LAYOUT.FIELD_SIZE[0]:
+            self.state_machine.snake.position.x = 0
+        if self.state_machine.snake.position.x < 0:
+            self.state_machine.snake.position.x = LAYOUT.FIELD_SIZE[0] - 1
+        if self.state_machine.snake.position.y >= LAYOUT.FIELD_SIZE[1]:
+            self.state_machine.snake.position.y = 0
+        if self.state_machine.snake.position.y < 0:
+            self.state_machine.snake.position.y = LAYOUT.FIELD_SIZE[1] - 1
 
         if self.state_machine.field[self.state_machine.snake.position] > 0:
             self._game_over = True
+
         self.state_machine.field[self.state_machine.snake.position] = self.state_machine.snake.length
 
         if self.state_machine.snake.position == self.state_machine.apple.position:
@@ -262,6 +280,8 @@ class Settings(State):
         self.state_machine.interface.activate(self.state_machine.settings_group)
 
     def exit_actions(self):
+        self.state_machine.walls_value_label.update_text("ON" if SETTINGS.WALLS else "OFF")
+        self.state_machine.speed_value_label.update_text(SETTINGS.STARTING_SPEED)
         self.state_machine.interface.deactivate(self.state_machine.settings_group)
 
 

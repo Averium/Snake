@@ -38,7 +38,7 @@ class JsonData:
                 json.dump(self._data, FILE, indent=2, sort_keys=False)
 
 
-SETTINGS = JsonData(PATH.SETTINGS)
+SETTINGS = JsonData(PATH.SETTINGS, read_only=False)
 COLORS = JsonData(PATH.COLORS)
 LAYOUT = JsonData(PATH.LAYOUT)
 SCORE = JsonData(PATH.SCORE, read_only=False)

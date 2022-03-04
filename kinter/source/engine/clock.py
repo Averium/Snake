@@ -30,7 +30,7 @@ class Timer:
 
     def __call__(self):
         if self._running and self._clock.now - self._period >= self._mark:
-            self._mark += self._period
+            self._mark = self._clock.now
             self._running = self._periodic
             return True
         else:

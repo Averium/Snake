@@ -34,9 +34,6 @@ class Snake(list):
         return vec(self[-1])
 
     def move(self):
-        if self.turn_queue:
-            self.direction = self.turn_queue.pop(0)
-
         head = self.head + self.direction
 
         if SETTINGS.WALLS:

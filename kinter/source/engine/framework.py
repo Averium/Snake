@@ -8,7 +8,9 @@ from source.game.game_objects import Field, Snake, Apple, Bonus
 from source.game.game_states import (
     Intro, Menu, Start, Game, GameOver, NewHighScore, Paused, Settings, KeyConfig, HighScores, Outro
 )
-from source.engine.interface import Widget, Interface, WidgetGroup, Button, WindowHeader, HeaderButton, TextLabel
+from source.engine.interface import (
+    Widget, Interface, WidgetGroup, Button, WindowHeader, HeaderButton, TextLabel, Switch, Slider
+)
 from source.engine.settings import SETTINGS, COLORS, LAYOUT
 from source.engine.state_machine import StateMachine
 
@@ -51,8 +53,7 @@ class Framework(Tk, StateMachine):
         self.bonus = Bonus(self.snake.delays[5] * (LAYOUT.FIELD_SIZE[0] + LAYOUT.FIELD_SIZE[1]) * 0.8, self.clock)
 
         self.score = 0
-        self.speed = SETTINGS.STARTING_SPEED
-        self.loop_timer.set(self.snake.delays[self.speed])
+        self.walls = SETTINGS.WALLS
 
         # --- INTERFACE ---------------------------------------------------------------------------------------------- #
         self.interface = Interface()
@@ -61,59 +62,77 @@ class Framework(Tk, StateMachine):
         self.header_group = WidgetGroup(self.interface, "Header", active=True)
         self.header = WindowHeader(self.header_group, self)
         self.close_button = HeaderButton(self.header_group, LAYOUT.CLOSE_BUTTON, COLORS.RED_BUTTON)
+        self.drag_label = TextLabel(self.header_group, LAYOUT.DRAG_LABEL, COLORS.FIELD, "Click to drag window", 0,
+                                    align="midleft")
 
         # panel #
         self.panel_group = WidgetGroup(self.interface, "Panel", active=True)
-        self.title_label = TextLabel(self.panel_group, LAYOUT.TITLE_LABEL, "Snake", 3, COLORS.GREEN_LABEL)
-        self.score_label = TextLabel(self.panel_group, LAYOUT.SCORE_LABEL, "Score: ", 0, COLORS.WHITE_LABEL, "midleft")
-        self.score_value_label = TextLabel(self.panel_group, LAYOUT.SCORE_VALUE_LABEL, "0", 1, COLORS.RED_LABEL,
+        self.title_label = TextLabel(self.panel_group, LAYOUT.TITLE_LABEL, COLORS.GREEN_LABEL, "Snake", 4)
+        self.score_label = TextLabel(self.panel_group, LAYOUT.SCORE_LABEL, COLORS.WHITE_LABEL, "Score: ", 1, "midleft")
+        self.score_value_label = TextLabel(self.panel_group, LAYOUT.SCORE_VALUE_LABEL, COLORS.RED_LABEL, "0", 1,
                                            "midright")
-        self.speed_label = TextLabel(self.panel_group, LAYOUT.SPEED_LABEL, "Speed: ", 0, COLORS.WHITE_LABEL, "midleft")
-        self.speed_value_label = TextLabel(self.panel_group, LAYOUT.SPEED_VALUE_LABEL, str(self.speed), 1,
-                                           COLORS.RED_LABEL, "midright")
-        self.stat_label = TextLabel(self.panel_group, LAYOUT.STAT_LABEL, "Statistics", 0, COLORS.GREEN_LABEL)
+        self.speed_label = TextLabel(self.panel_group, LAYOUT.SPEED_LABEL, COLORS.WHITE_LABEL, "Speed: ", 1, "midleft")
+        self.speed_value_label = TextLabel(self.panel_group, LAYOUT.SPEED_VALUE_LABEL, COLORS.RED_LABEL,
+                                           str(SETTINGS.STARTING_SPEED), 1, "midright")
+        self.walls_label = TextLabel(self.panel_group, LAYOUT.WALLS_LABEL, COLORS.WHITE_LABEL, "Walls: ", 1, "midleft")
+        self.walls_value_label = TextLabel(self.panel_group, LAYOUT.WALLS_VALUE_LABEL, COLORS.RED_LABEL,
+                                           "ON" if SETTINGS.WALLS else "OFF", 1, "midright")
+        self.stat_label = TextLabel(self.panel_group, LAYOUT.STAT_LABEL, COLORS.GREEN_LABEL, "Statistics")
 
         # menu #
         self.menu_group = WidgetGroup(self.interface, "Menu")
         self.start_group = WidgetGroup(self.interface, "Start")
         self.resume_group = WidgetGroup(self.interface, "Resume")
 
-        self.start_button = Button(self.start_group, LAYOUT.START_BUTTON, "Play", colors=COLORS.GREEN_BUTTON,
-                                   text_size=2)
-        self.continue_button = Button(self.resume_group, LAYOUT.RESUME_BUTTON, "Continue", colors=COLORS.GREEN_BUTTON)
-        self.restart_button = Button(self.resume_group, LAYOUT.RESTART_BUTTON, "Restart", colors=COLORS.GREEN_BUTTON)
-        self.settings_button = Button(self.menu_group, LAYOUT.SETTINGS_BUTTON, "Settings")
-        self.key_config_button = Button(self.menu_group, LAYOUT.KEY_CONFIG_BUTTON, "Key config")
-        self.high_scores_button = Button(self.menu_group, LAYOUT.HIGH_SCORES_BUTTON, "High scores")
-        self.exit_button = Button(self.menu_group, LAYOUT.EXIT_BUTTON, "Exit", colors=COLORS.RED_BUTTON)
+        self.start_button = Button(self.start_group, LAYOUT.START_BUTTON, COLORS.GREEN_BUTTON, "Play", 3)
+        self.continue_button = Button(self.resume_group, LAYOUT.RESUME_BUTTON, COLORS.GREEN_BUTTON, "Continue")
+        self.restart_button = Button(self.resume_group, LAYOUT.RESTART_BUTTON, COLORS.GREEN_BUTTON, "Restart")
+        self.paused_label = TextLabel(self.resume_group, LAYOUT.PAUSED_LABEL, COLORS.GREEN_LABEL, "Paused", 3)
+        self.settings_button = Button(self.menu_group, LAYOUT.SETTINGS_BUTTON, COLORS.WHITE_BUTTON, "Settings")
+        self.key_config_button = Button(self.menu_group, LAYOUT.KEY_CONFIG_BUTTON, COLORS.WHITE_BUTTON, "Key config")
+        self.high_scores_button = Button(self.menu_group, LAYOUT.HIGH_SCORES_BUTTON, COLORS.WHITE_BUTTON, "High scores")
+        self.exit_button = Button(self.menu_group, LAYOUT.EXIT_BUTTON, COLORS.RED_BUTTON, "Exit")
 
         # settings #
         self.settings_group = WidgetGroup(self.interface, "Settings")
-        self.settings_return_button = Button(self.settings_group, LAYOUT.SETTINGS_RETURN_BUTTON, "Back",
-                                             colors=COLORS.RED_BUTTON)
+        self.wall_switch = Switch(self.settings_group, LAYOUT.WALL_SWITCH, COLORS.RED_SWITCH, "Walls", 1,
+                                  state=SETTINGS.WALLS, align="center")
+        self.settings_return_button = Button(self.settings_group, LAYOUT.SETTINGS_RETURN_BUTTON, COLORS.RED_BUTTON,
+                                             "Back")
+        self.starting_speed_slider = Slider(
+            self.settings_group, LAYOUT.STARTING_SPEED_SLIDER, COLORS.GREEN_SLIDER, 200,
+            SETTINGS.STARTING_SPEED / (SETTINGS.SPEED_MAPPING[1] - SETTINGS.SPEED_MAPPING[0])
+        )
+        self.starting_speed_label = TextLabel(self.settings_group, LAYOUT.ORIGO, COLORS.WHITE_LABEL, "Speed:",
+                                              align="midleft")
+        self.starting_speed_value_label = TextLabel(self.settings_group, LAYOUT.ORIGO, COLORS.RED_LABEL,
+                                                    str(SETTINGS.STARTING_SPEED), align="midright")
+
+        self.starting_speed_label.snap((self.starting_speed_slider.left, LAYOUT.STARTING_SPEED_LABEL))
+        self.starting_speed_value_label.snap((self.starting_speed_slider.right, LAYOUT.STARTING_SPEED_VALUE_LABEL))
 
         # key config #
         self.key_config_group = WidgetGroup(self.interface, "Key config")
-        self.key_config_return_button = Button(self.key_config_group, LAYOUT.KEY_CONFIG_RETURN_BUTTON, "Back",
-                                               colors=COLORS.RED_BUTTON)
+        self.key_config_return_button = Button(self.key_config_group, LAYOUT.KEY_CONFIG_RETURN_BUTTON,
+                                               COLORS.RED_BUTTON, "Back")
 
         # high scores #
         self.high_scores_group = WidgetGroup(self.interface, "High scores")
-        self.high_scores_return_button = Button(self.high_scores_group, LAYOUT.HIGH_SCORES_RETURN_BUTTON, "Back",
-                                                colors=COLORS.RED_BUTTON)
+        self.high_scores_return_button = Button(self.high_scores_group, LAYOUT.HIGH_SCORES_RETURN_BUTTON,
+                                                COLORS.RED_BUTTON, "Back")
 
         # start #
         self.start_game_group = WidgetGroup(self.interface, "Start game")
-        self.start_game_label = TextLabel(self.start_game_group, LAYOUT.START_GAME_LABEL, "Press any key to start",
-                                          text_size=0, color=COLORS.WHITE_LABEL)
+        self.start_game_label = TextLabel(self.start_game_group, LAYOUT.START_GAME_LABEL, COLORS.WHITE_LABEL,
+                                          "Press any key to start")
 
         # game over #
         self.game_over_group = WidgetGroup(self.interface, "Start game")
-        self.game_over_label = TextLabel(self.game_over_group, LAYOUT.GAME_OVER_LABEL, "Game over", text_size=2,
-                                         color=COLORS.RED_LABEL)
-        self.game_over_menu_button = Button(self.game_over_group, LAYOUT.GAME_OVER_MENU_BUTTON, "Menu")
-        self.game_over_restart_button = Button(self.game_over_group, LAYOUT.GAME_OVER_RESTART_BUTTON, "Play again",
-                                               colors=COLORS.GREEN_BUTTON)
+        self.game_over_label = TextLabel(self.game_over_group, LAYOUT.GAME_OVER_LABEL, COLORS.RED_LABEL, "Game over", 2)
+        self.game_over_menu_button = Button(self.game_over_group, LAYOUT.GAME_OVER_MENU_BUTTON, COLORS.WHITE_BUTTON,
+                                            "Menu")
+        self.game_over_restart_button = Button(self.game_over_group, LAYOUT.GAME_OVER_RESTART_BUTTON,
+                                               COLORS.GREEN_BUTTON, "Play again")
 
         # --- STATE MACHINE ------------------------------------------------------------------------------------------ #
 
@@ -138,6 +157,12 @@ class Framework(Tk, StateMachine):
         self.field.clear()
         self.snake.reset(self.field)
         self.apple.repos(self.field)
+        self.loop_timer.set(self.snake.delays[SETTINGS.STARTING_SPEED])
+        self.walls = SETTINGS.WALLS
+
+    def close(self):
+        SETTINGS.save()
+        self.destroy()
 
     def events(self):
 
@@ -146,6 +171,15 @@ class Framework(Tk, StateMachine):
 
         if self.close_button.pressed:
             self.running = False
+
+        if self.wall_switch.switched:
+            SETTINGS.WALLS = self.wall_switch.state
+
+        if self.starting_speed_slider.moved:
+            start, stop, high, low = SETTINGS.SPEED_MAPPING
+            speed = self.starting_speed_slider.value * (stop - start) + start
+            SETTINGS.STARTING_SPEED = round(speed)
+            self.starting_speed_value_label.update_text(SETTINGS.STARTING_SPEED)
 
     def logic(self):
         if self.loop_timer():
@@ -171,4 +205,4 @@ class Framework(Tk, StateMachine):
         if self.running:
             self.after(self.clock.leftover(), self.loop)
         else:
-            self.destroy()
+            self.close()
