@@ -44,7 +44,7 @@ class Framework(Tk, StateMachine):
         self.display.pack(fill=BOTH, expand=True)
 
         self.loop_timer = Timer(self.clock, SETTINGS.STARTING_SPEED)
-        self.state_timer = Timer(self.clock, 500, periodic=False, running=False)
+        self.state_timer = Timer(self.clock, 0, periodic=False, running=False)
 
         self.field = Field(LAYOUT.FIELD_POS, LAYOUT.FIELD_SIZE)
         self.snake = Snake(self.field)

@@ -13,8 +13,11 @@ if __name__ == "__main__":
 # TODO:
 #  - [ BASIC ] -------------------------------------------------
 #  Statistics interface
-#  High score system implementation (leaderboard, input field widget)
 #  Key config implementation (buttons with changing text)
+#  Input field widget implementation
+#  High score system implementation
+#  Leaderboard implementation
+#  Graphics wrapper implementation
 #  Light/Dark theme
 #  - [ GAMEPLAY ] ----------------------------------------------
 #  Multiple levels with increasing speed
@@ -22,7 +25,7 @@ if __name__ == "__main__":
 #  Enemy snake event on higher levels
 #  Intro, Outro
 #  - [ PLAYERS ] -----------------------------------------------
-#  Profiles and login
+#  Profiles and login screen
 #  Personal settings
 #  Snake customization
-#  Personal record
+#  Personal records
