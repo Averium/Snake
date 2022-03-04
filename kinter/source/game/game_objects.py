@@ -94,7 +94,7 @@ class Snake:
         self.heading = Vector(self.direction)
         self.length = SETTINGS.STARTING_LENGTH
         self.speed = SETTINGS.STARTING_SPEED
-        self.stats = [0, 0]
+        self.stats = {"apple": 0, "bonus": 0}
 
         for tile in range(self.length):
             field[self.position - self.direction * tile] = self.length - tile

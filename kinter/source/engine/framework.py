@@ -6,7 +6,7 @@ from source.engine.clock import Clock, Timer
 from source.engine.events import EventHandler
 from source.game.game_objects import Field, Snake, Apple, Bonus
 from source.game.game_states import (
-    Intro, Menu, Start, Game, GameOver, NewHighScore, Paused, Settings, KeyConfig, HighScores, Outro
+    Intro, Menu, Start, Game, GameOver, NewHighScore, Paused, Settings, KeyConfig, Leaderboard, Outro
 )
 from source.engine.interface import (
     Widget, Interface, WidgetGroup, Button, WindowHeader, HeaderButton, TextLabel, Switch, Slider
@@ -53,6 +53,7 @@ class Framework(Tk, StateMachine):
         self.bonus = Bonus(self.snake.delays[5] * (LAYOUT.FIELD_SIZE[0] + LAYOUT.FIELD_SIZE[1]) * 0.8, self.clock)
 
         self.score = 0
+        self.speed = SETTINGS.STARTING_SPEED
         self.walls = SETTINGS.WALLS
 
         # --- INTERFACE ---------------------------------------------------------------------------------------------- #
@@ -62,7 +63,7 @@ class Framework(Tk, StateMachine):
         self.header_group = WidgetGroup(self.interface, "Header", active=True)
         self.header = WindowHeader(self.header_group, self)
         self.close_button = HeaderButton(self.header_group, LAYOUT.CLOSE_BUTTON, COLORS.RED_BUTTON)
-        self.drag_label = TextLabel(self.header_group, LAYOUT.DRAG_LABEL, COLORS.FIELD, "Click to drag window", 0,
+        self.drag_label = TextLabel(self.header_group, LAYOUT.DRAG_LABEL, COLORS.FIELD, "Click here to drag window", 0,
                                     align="midleft")
 
         # panel #
@@ -73,11 +74,11 @@ class Framework(Tk, StateMachine):
                                            "midright")
         self.speed_label = TextLabel(self.panel_group, LAYOUT.SPEED_LABEL, COLORS.WHITE_LABEL, "Speed: ", 1, "midleft")
         self.speed_value_label = TextLabel(self.panel_group, LAYOUT.SPEED_VALUE_LABEL, COLORS.RED_LABEL,
-                                           str(SETTINGS.STARTING_SPEED), 1, "midright")
+                                           str(self.speed), 1, "midright")
         self.walls_label = TextLabel(self.panel_group, LAYOUT.WALLS_LABEL, COLORS.WHITE_LABEL, "Walls: ", 1, "midleft")
         self.walls_value_label = TextLabel(self.panel_group, LAYOUT.WALLS_VALUE_LABEL, COLORS.RED_LABEL,
-                                           "ON" if SETTINGS.WALLS else "OFF", 1, "midright")
-        self.stat_label = TextLabel(self.panel_group, LAYOUT.STAT_LABEL, COLORS.GREEN_LABEL, "Statistics")
+                                           "ON" if self.walls else "OFF", 1, "midright")
+        self.stat_label = TextLabel(self.panel_group, LAYOUT.STAT_LABEL, COLORS.GREEN_LABEL, "Statistics", 2)
 
         # menu #
         self.menu_group = WidgetGroup(self.interface, "Menu")
@@ -90,7 +91,7 @@ class Framework(Tk, StateMachine):
         self.paused_label = TextLabel(self.resume_group, LAYOUT.PAUSED_LABEL, COLORS.GREEN_LABEL, "Paused", 3)
         self.settings_button = Button(self.menu_group, LAYOUT.SETTINGS_BUTTON, COLORS.WHITE_BUTTON, "Settings")
         self.key_config_button = Button(self.menu_group, LAYOUT.KEY_CONFIG_BUTTON, COLORS.WHITE_BUTTON, "Key config")
-        self.high_scores_button = Button(self.menu_group, LAYOUT.HIGH_SCORES_BUTTON, COLORS.WHITE_BUTTON, "High scores")
+        self.high_scores_button = Button(self.menu_group, LAYOUT.HIGH_SCORES_BUTTON, COLORS.WHITE_BUTTON, "Leaderboard")
         self.exit_button = Button(self.menu_group, LAYOUT.EXIT_BUTTON, COLORS.RED_BUTTON, "Exit")
 
         # settings #
@@ -128,7 +129,7 @@ class Framework(Tk, StateMachine):
 
         # game over #
         self.game_over_group = WidgetGroup(self.interface, "Start game")
-        self.game_over_label = TextLabel(self.game_over_group, LAYOUT.GAME_OVER_LABEL, COLORS.RED_LABEL, "Game over", 2)
+        self.game_over_label = TextLabel(self.game_over_group, LAYOUT.GAME_OVER_LABEL, COLORS.RED_LABEL, "Game over", 3)
         self.game_over_menu_button = Button(self.game_over_group, LAYOUT.GAME_OVER_MENU_BUTTON, COLORS.WHITE_BUTTON,
                                             "Menu")
         self.game_over_restart_button = Button(self.game_over_group, LAYOUT.GAME_OVER_RESTART_BUTTON,
@@ -147,7 +148,7 @@ class Framework(Tk, StateMachine):
             Paused(self),
             Settings(self),
             KeyConfig(self),
-            HighScores(self),
+            Leaderboard(self),
             Outro(self),
         )
 
@@ -157,8 +158,14 @@ class Framework(Tk, StateMachine):
         self.field.clear()
         self.snake.reset(self.field)
         self.apple.repos(self.field)
-        self.loop_timer.set(self.snake.delays[SETTINGS.STARTING_SPEED])
+        self.score = 0
         self.walls = SETTINGS.WALLS
+        self.speed = SETTINGS.STARTING_SPEED
+        self.loop_timer.set(self.snake.delays[self.speed])
+
+        self.score_value_label.update_text(self.score)
+        self.speed_value_label.update_text(self.speed)
+        self.walls_value_label.update_text("ON" if self.walls else "OFF")
 
     def close(self):
         SETTINGS.save()

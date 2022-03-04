@@ -13,7 +13,7 @@ if __name__ == "__main__":
 # TODO:
 #  - [ BASIC ] -------------------------------------------------
 #  Statistics interface
-#  High score system implementation (input field widget)
+#  High score system implementation (leaderboard, input field widget)
 #  Key config implementation (buttons with changing text)
 #  Light/Dark theme
 #  - [ GAMEPLAY ] ----------------------------------------------
@@ -25,3 +25,4 @@ if __name__ == "__main__":
 #  Profiles and login
 #  Personal settings
 #  Snake customization
+#  Personal record

@@ -9,7 +9,7 @@
     50
   ],
   "BONUS_CHANCE": 0.05,
-  "APPLE_SCORE": 5,
-  "BONUS_SCORE": 10,
+  "APPLE_SCORE": 1,
+  "BONUS_SCORE": 2,
   "WALLS": false
 }

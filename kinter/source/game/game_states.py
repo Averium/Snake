@@ -15,7 +15,7 @@ class States:
     PAUSED = "Paused"
     SETTINGS = "Settings"
     KEY_CONFIG = "Key config"
-    HIGH_SCORES = "High scores"
+    HIGH_SCORES = "Leaderboard"
     OUTRO = "Outro"
 
 
@@ -57,10 +57,9 @@ class Menu(State):
             return States.OUTRO
 
     def entry_actions(self):
+        self.state_machine.reset()
         self.state_machine.interface.activate(self.state_machine.menu_group)
         self.state_machine.interface.activate(self.state_machine.start_group)
-        self.state_machine.score = 0
-        self.state_machine.score_value_label.update_text(self.state_machine.score)
 
     def exit_actions(self):
         self.state_machine.interface.deactivate(self.state_machine.menu_group)
@@ -82,8 +81,6 @@ class Start(State):
     def entry_actions(self):
         self.state_machine.reset()
         self.state_machine.interface.activate(self.state_machine.start_game_group)
-        self.state_machine.score = 0
-        self.state_machine.score_value_label.update_text(self.state_machine.score)
 
     def exit_actions(self):
         self.state_machine.interface.deactivate(self.state_machine.start_game_group)
@@ -156,18 +153,20 @@ class Game(State):
 
         self.state_machine.field[self.state_machine.snake.position] = self.state_machine.snake.length
 
+        score_multiplier = SETTINGS.SPEED_MAPPING[1] - SETTINGS.SPEED_MAPPING[0] + self.state_machine.speed
+
         if self.state_machine.snake.position == self.state_machine.apple.position:
             self.state_machine.apple.repos(self.state_machine.field)
             self.state_machine.snake.length += 1
-            self.state_machine.snake.stats[0] += 1
-            self.state_machine.score += SETTINGS.APPLE_SCORE
+            self.state_machine.snake.stats["apple"] += 1
+            self.state_machine.score += SETTINGS.APPLE_SCORE * score_multiplier
             self.state_machine.field[self.state_machine.snake.position] = self.state_machine.snake.length
             if not self.state_machine.bonus.active and random() < SETTINGS.BONUS_CHANCE:
                 self.state_machine.bonus.activate(self.state_machine.field)
         if self.state_machine.bonus.active and self.state_machine.snake.position == self.state_machine.bonus.position:
             self.state_machine.bonus.deactivate()
-            self.state_machine.score += SETTINGS.BONUS_SCORE
-            self.state_machine.snake.stats[1] += 1
+            self.state_machine.score += SETTINGS.BONUS_SCORE * score_multiplier
+            self.state_machine.snake.stats["bonus"] += 1
         self.state_machine.score_value_label.update_text(str(self.state_machine.score))
 
     def render(self, display):
@@ -280,8 +279,6 @@ class Settings(State):
         self.state_machine.interface.activate(self.state_machine.settings_group)
 
     def exit_actions(self):
-        self.state_machine.walls_value_label.update_text("ON" if SETTINGS.WALLS else "OFF")
-        self.state_machine.speed_value_label.update_text(SETTINGS.STARTING_SPEED)
         self.state_machine.interface.deactivate(self.state_machine.settings_group)
 
 
@@ -301,7 +298,7 @@ class KeyConfig(State):
         self.state_machine.interface.deactivate(self.state_machine.key_config_group)
 
 
-class HighScores(State):
+class Leaderboard(State):
 
     def __init__(self, state_machine):
         super().__init__(States.HIGH_SCORES, state_machine)
