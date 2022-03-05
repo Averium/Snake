@@ -9,7 +9,7 @@ from source.game.game_states import (
     Intro, Menu, Start, Game, GameOver, NewHighScore, Paused, Settings, KeyConfig, Leaderboard, Outro
 )
 from source.engine.interface import (
-    Widget, Interface, WidgetGroup, Button, WindowHeader, HeaderButton, TextLabel, Switch, Slider
+    Widget, Interface, WidgetGroup, Button, WindowHeader, HeaderButton, TextLabel, Switch, Slider, LabeledSlider
 )
 from source.engine.settings import SETTINGS, COLORS, LAYOUT
 from source.engine.state_machine import StateMachine
@@ -70,13 +70,13 @@ class Framework(Tk, StateMachine):
         self.panel_group = WidgetGroup(self.interface, "Panel", active=True)
         self.title_label = TextLabel(self.panel_group, LAYOUT.TITLE_LABEL, COLORS.GREEN_LABEL, "Snake", 4)
         self.score_label = TextLabel(self.panel_group, LAYOUT.SCORE_LABEL, COLORS.WHITE_LABEL, "Score: ", 1, "midleft")
-        self.score_value_label = TextLabel(self.panel_group, LAYOUT.SCORE_VALUE_LABEL, COLORS.RED_LABEL, "0", 1,
+        self.score_value_label = TextLabel(self.panel_group, LAYOUT.SCORE_VALUE_LABEL, COLORS.GREEN_LABEL, "0", 1,
                                            "midright")
         self.speed_label = TextLabel(self.panel_group, LAYOUT.SPEED_LABEL, COLORS.WHITE_LABEL, "Speed: ", 1, "midleft")
-        self.speed_value_label = TextLabel(self.panel_group, LAYOUT.SPEED_VALUE_LABEL, COLORS.RED_LABEL,
+        self.speed_value_label = TextLabel(self.panel_group, LAYOUT.SPEED_VALUE_LABEL, COLORS.GREEN_LABEL,
                                            str(self.speed), 1, "midright")
         self.walls_label = TextLabel(self.panel_group, LAYOUT.WALLS_LABEL, COLORS.WHITE_LABEL, "Walls: ", 1, "midleft")
-        self.walls_value_label = TextLabel(self.panel_group, LAYOUT.WALLS_VALUE_LABEL, COLORS.RED_LABEL,
+        self.walls_value_label = TextLabel(self.panel_group, LAYOUT.WALLS_VALUE_LABEL, COLORS.GREEN_LABEL,
                                            "ON" if self.walls else "OFF", 1, "midright")
         self.stat_label = TextLabel(self.panel_group, LAYOUT.STAT_LABEL, COLORS.GREEN_LABEL, "Statistics", 2)
 
@@ -96,21 +96,16 @@ class Framework(Tk, StateMachine):
 
         # settings #
         self.settings_group = WidgetGroup(self.interface, "Settings")
-        self.wall_switch = Switch(self.settings_group, LAYOUT.WALL_SWITCH, COLORS.RED_SWITCH, "Walls", 1,
+        self.wall_switch = Switch(self.settings_group, LAYOUT.WALL_SWITCH, COLORS.GREEN_SWITCH, "Walls", 1,
                                   state=SETTINGS.WALLS, align="center")
         self.settings_return_button = Button(self.settings_group, LAYOUT.SETTINGS_RETURN_BUTTON, COLORS.RED_BUTTON,
                                              "Back")
-        self.starting_speed_slider = Slider(
-            self.settings_group, LAYOUT.STARTING_SPEED_SLIDER, COLORS.GREEN_SLIDER, 200,
-            SETTINGS.STARTING_SPEED / (SETTINGS.SPEED_MAPPING[1] - SETTINGS.SPEED_MAPPING[0])
-        )
-        self.starting_speed_label = TextLabel(self.settings_group, LAYOUT.ORIGO, COLORS.WHITE_LABEL, "Speed:",
-                                              align="midleft")
-        self.starting_speed_value_label = TextLabel(self.settings_group, LAYOUT.ORIGO, COLORS.RED_LABEL,
-                                                    str(SETTINGS.STARTING_SPEED), align="midright")
 
-        self.starting_speed_label.snap((self.starting_speed_slider.left, LAYOUT.STARTING_SPEED_LABEL))
-        self.starting_speed_value_label.snap((self.starting_speed_slider.right, LAYOUT.STARTING_SPEED_VALUE_LABEL))
+        self.starting_speed_slider = LabeledSlider(
+            self.settings_group, LAYOUT.STARTING_SPEED_SLIDER, LAYOUT.SLIDER_LENGTH, COLORS.GREEN_SLIDER, "Speed:",
+            SETTINGS.STARTING_SPEED / (SETTINGS.SPEED_MAPPING[1] - SETTINGS.SPEED_MAPPING[0]),
+            SETTINGS.SPEED_MAPPING[:2]
+        )
 
         # key config #
         self.key_config_group = WidgetGroup(self.interface, "Key config")
@@ -183,10 +178,7 @@ class Framework(Tk, StateMachine):
             SETTINGS.WALLS = self.wall_switch.state
 
         if self.starting_speed_slider.moved:
-            start, stop, high, low = SETTINGS.SPEED_MAPPING
-            speed = self.starting_speed_slider.value * (stop - start) + start
-            SETTINGS.STARTING_SPEED = round(speed)
-            self.starting_speed_value_label.update_text(SETTINGS.STARTING_SPEED)
+            SETTINGS.STARTING_SPEED = round(self.starting_speed_slider.mapped)
 
     def logic(self):
         if self.loop_timer():

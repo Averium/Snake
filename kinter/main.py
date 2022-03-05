@@ -10,6 +10,8 @@ if __name__ == "__main__":
     main()
 
 
+# FIXME: Window disappears when losing focus
+
 # TODO:
 #  - [ BASIC ] -------------------------------------------------
 #  Statistics interface
