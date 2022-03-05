@@ -3,6 +3,8 @@ from source.engine.tools import Vector
 
 class EventHandler:
 
+    """ Event handler wrapper for tkinter """
+
     def __init__(self, framework):
 
         framework.bind("<Key>", self.key_press)

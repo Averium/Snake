@@ -1,4 +1,4 @@
-from kinter.source.engine.framework import Framework
+from source.engine.framework import Framework
 
 
 def main():
