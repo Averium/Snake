@@ -2,6 +2,9 @@ from ctypes import windll
 from tkinter import Tk, Canvas, BOTH
 from tkinter.font import Font
 
+from win32gui import GetForegroundWindow, ShowWindow
+from win32con import SW_MINIMIZE
+
 from source.engine.clock import Clock, Timer
 from source.engine.events import EventHandler
 from source.engine.interface import (
@@ -18,9 +21,9 @@ from source.game.game_states import (
 
 
 class Framework(Tk, StateMachine):
-    GWL_EXSTYLE = -20
-    WS_EX_APPWINDOW = 0x00040000
-    WS_EX_TOOLWINDOW = 0x00000080
+    STYLE = -20
+    APP_WINDOW = 0x00040000
+    TOOL_WINDOW = 0x00000080
 
     def __init__(self):
 
@@ -51,15 +54,16 @@ class Framework(Tk, StateMachine):
         self.loop_timer = Timer(self.clock, SETTINGS.STARTING_SPEED)
         self.state_timer = Timer(self.clock, 0, periodic=False, running=False)
 
+        self.score = 0
+        self.speed = SETTINGS.STARTING_SPEED
+        self.walls = SETTINGS.WALLS
+
         self.field = Field(LAYOUT.FIELD_POS, LAYOUT.FIELD_SIZE)
         self.snake = Snake(self.field)
         self.apple = Apple()
         self.apple.repos(self.field)
-        self.bonus = Bonus(self.snake.delays[5] * (LAYOUT.FIELD_SIZE[0] + LAYOUT.FIELD_SIZE[1]) * 0.8, self.clock)
-
-        self.score = 0
-        self.speed = SETTINGS.STARTING_SPEED
-        self.walls = SETTINGS.WALLS
+        self.bonus = Bonus(0, self.clock)
+        self.bonus.update_lifetime(self.snake.delays[self.speed])
 
         # --- INTERFACE ---------------------------------------------------------------------------------------------- #
         self.interface = Interface()
@@ -68,11 +72,14 @@ class Framework(Tk, StateMachine):
         self.header_group = WidgetGroup(self.interface, "Header", active=True)
         self.header = WindowHeader(self.header_group, self)
         self.close_button = HeaderButton(self.header_group, LAYOUT.CLOSE_BUTTON, COLORS.RED_BUTTON)
+        self.hide_button = HeaderButton(self.header_group, LAYOUT.HIDE_BUTTON, COLORS.GREEN_BUTTON)
         self.drag_label = TextLabel(self.header_group, LAYOUT.DRAG_LABEL, COLORS.FIELD, "Click here to drag window", 0,
                                     align="midleft")
 
         # panel #
         self.panel_group = WidgetGroup(self.interface, "Panel", active=True)
+        self.bonus_group = WidgetGroup(self.interface, "Bonus", active=False)
+
         self.title_label = TextLabel(self.panel_group, LAYOUT.TITLE_LABEL, COLORS.GREEN_LABEL, "Snake", 4)
         self.score_label = TextLabel(self.panel_group, LAYOUT.SCORE_LABEL, COLORS.WHITE_LABEL, "Score: ", 1, "midleft")
         self.score_value_label = TextLabel(self.panel_group, LAYOUT.SCORE_VALUE_LABEL, COLORS.RED_LABEL, "0", 1,
@@ -86,6 +93,9 @@ class Framework(Tk, StateMachine):
         self.stat_label = TextLabel(self.panel_group, LAYOUT.STAT_LABEL, COLORS.GREEN_LABEL, "Statistics", 2)
         self.apple_stat_label = StatLabel(self.panel_group, LAYOUT.APPLE_STAT, 170, [COLORS.RED_LABEL, COLORS.APPLE])
         self.bonus_stat_label = StatLabel(self.panel_group, LAYOUT.BONUS_STAT, 170, [COLORS.RED_LABEL, COLORS.BONUS[0]])
+
+        self.bonus_label = TextLabel(self.bonus_group, LAYOUT.BONUS_LABEL, COLORS.BLUE_LABEL, "Bonus", 3)
+        self.bonus_timer_label = TextLabel(self.bonus_group, LAYOUT.BONUS_TIMER_LABEL, COLORS.BLUE_LABEL, "0", 2)
 
         # menu #
         self.menu_group = WidgetGroup(self.interface, "Menu")
@@ -125,8 +135,8 @@ class Framework(Tk, StateMachine):
                 continue
             switch_pos = Vector(LAYOUT.KEY_CONFIG_SWITCHES) + Vector(0, LAYOUT.KEY_CONFIG_LINE_SPACE * row)
             label_pos = Vector(LAYOUT.KEY_CONFIG_LABELS) + Vector(0, LAYOUT.KEY_CONFIG_LINE_SPACE * row)
-            switch = KeyConfigSwitch(self.key_config_group, switch_pos, COLORS.RED_BUTTON, key)
-            TextLabel(self.key_config_group, label_pos, COLORS.WHITE_LABEL, name.capitalize()+":", 1, "midleft")
+            switch = KeyConfigSwitch(self.key_config_group, switch_pos, COLORS.GREEN_BUTTON, key)
+            TextLabel(self.key_config_group, label_pos, COLORS.WHITE_LABEL, name.capitalize() + ":", 1, "midleft")
             self.key_config_switches[name] = switch
 
         # high scores #
@@ -173,7 +183,10 @@ class Framework(Tk, StateMachine):
         self.score = 0
         self.walls = SETTINGS.WALLS
         self.speed = SETTINGS.STARTING_SPEED
+
         self.loop_timer.set(self.snake.delays[self.speed])
+        self.bonus.update_lifetime(self.snake.delays[self.speed])
+        self.bonus.deactivate(self)
 
         self.score_value_label.update_text(self.score)
         self.speed_value_label.update_text(self.speed)
@@ -193,6 +206,10 @@ class Framework(Tk, StateMachine):
 
         if self.close_button.pressed:
             self.running = False
+
+        if self.hide_button.pressed:
+            minimize = GetForegroundWindow()
+            ShowWindow(minimize, SW_MINIMIZE)
 
     def logic(self):
         if self.loop_timer():
@@ -222,10 +239,10 @@ class Framework(Tk, StateMachine):
 
     def set_app_window(self):
         hwnd = windll.user32.GetParent(self.winfo_id())
-        style = windll.user32.GetWindowLongPtrW(hwnd, self.GWL_EXSTYLE)
-        style = style & ~self.WS_EX_TOOLWINDOW
-        style = style | self.WS_EX_APPWINDOW
-        res = windll.user32.SetWindowLongPtrW(hwnd, self.GWL_EXSTYLE, style)
+        style = windll.user32.GetWindowLongPtrW(hwnd, self.STYLE)
+        style = style & ~self.TOOL_WINDOW
+        style = style | self.APP_WINDOW
+        windll.user32.SetWindowLongPtrW(hwnd, self.STYLE, style)
         # re-assert the new window style
         self.withdraw()
         self.after(10, self.deiconify)

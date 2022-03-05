@@ -19,6 +19,7 @@
   "GAP": 2,
 
   "DRAG_LABEL": [12, 18],
+  "HIDE_BUTTON": [862, 8],
   "CLOSE_BUTTON": [890, 8],
 
   "TITLE_LABEL": [778, 90],
@@ -32,6 +33,8 @@
   "APPLE_STAT": [866, 420],
   "BONUS_STAT": [866, 455],
   "STAT_LABEL_GAP": 160,
+  "BONUS_LABEL": [778, 560],
+  "BONUS_TIMER_LABEL": [778, 610],
 
   "PAUSED_LABEL": [320, 160],
   "START_BUTTON": [320, 260],

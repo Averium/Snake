@@ -72,7 +72,7 @@ class Field(Matrix, Rectangle):
         display.create_rectangle(*self.rect, fill=COLORS.FIELD, outline=COLORS.FIELD)
 
     def fade_content(self, display):
-        display.create_rectangle(*self.rect, fill=COLORS.FADE, outline=COLORS.FADE, stipple='gray50')
+        display.create_rectangle(*self.rect, fill=COLORS.FADE, outline=COLORS.FADE, stipple='gray75')
 
 
 class Snake:
@@ -138,29 +138,38 @@ class Bonus(Apple):
 
     def __init__(self, lifetime, clock):
         super().__init__()
-        self._animation_timer = Timer(clock, 200)
+        self._animation_timer = Timer(clock, 120)
         self._lifetime_timer = Timer(clock, lifetime)
         self._active = False
         self._animation_state = True
 
-    def update(self, field):
+    def update(self, framework):
         if self._lifetime_timer():
-            self.deactivate()
-            field[self.position] = 0
+            self.deactivate(framework)
+            framework.field[self.position] = 0
         if self.active and self._animation_timer():
             self._animation_state = not self._animation_state
-            field[self.position] = self.ID - int(self._animation_state)
+            framework.field[self.position] = self.ID - int(self._animation_state)
+        framework.bonus_timer_label.update_text(round(self._lifetime_timer.countdown(), 1))
 
-    def activate(self, field):
+    def update_lifetime(self, delay):
+        delay = delay * (LAYOUT.FIELD_SIZE[0] + LAYOUT.FIELD_SIZE[1])
+        self._lifetime_timer.set(delay)
+
+    def activate(self, framework):
         self._active = True
-        self.repos(field)
+        self.repos(framework.field)
         self._lifetime_timer.start()
         self._animation_timer.start()
 
-    def deactivate(self):
+        framework.interface.activate(framework.bonus_group)
+
+    def deactivate(self, framework):
         self._active = False
         self._lifetime_timer.stop()
         self._animation_timer.stop()
+
+        framework.interface.deactivate(framework.bonus_group)
 
     @property
     def active(self):

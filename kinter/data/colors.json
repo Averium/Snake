@@ -6,11 +6,12 @@
   "SNAKE": "#159410",
   "PATTERN": "#004000",
   "APPLE": "#b00000",
-  "BONUS": ["#6060f0", "#3030f0"],
+  "BONUS": ["#6060f0", "#303090"],
 
   "WHITE_LABEL": "#808080",
   "GREEN_LABEL": "#007000",
   "RED_LABEL": "#900000",
+  "BLUE_LABEL": "#6060f0",
 
   "WHITE_BUTTON": ["#808080", "#d1d1d1"],
   "RED_BUTTON": ["#900000", "#ff0000"],

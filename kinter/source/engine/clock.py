@@ -48,3 +48,6 @@ class Timer:
 
     def set(self, delay):
         self._period = delay / 1000
+
+    def countdown(self):
+        return (self._mark - (self._clock.now - self._period)) * self._running

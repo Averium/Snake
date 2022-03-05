@@ -13,11 +13,10 @@ if __name__ == "__main__":
 
 # TODO:
 #  - [ BASIC ] -------------------------------------------------
-#  Bonus countdown and speed dependent bonus timer
 #  Input field widget implementation
 #  High score system implementation
 #  Leaderboard implementation
-#  Graphics wrapper implementation
+#  Graphics wrapper implementation (Canvas)
 #  Light/Dark theme
 #  - [ GAMEPLAY ] ----------------------------------------------
 #  Multiple levels with increasing speed

@@ -136,7 +136,7 @@ class Game(State):
             return
 
         self.state_machine.field.update()
-        self.state_machine.bonus.update(self.state_machine.field)
+        self.state_machine.bonus.update(self.state_machine)
 
         self.state_machine.snake.move()
 
@@ -163,9 +163,9 @@ class Game(State):
             self.state_machine.score += SETTINGS.APPLE_SCORE * score_multiplier
             self.state_machine.field[self.state_machine.snake.position] = self.state_machine.snake.length
             if not self.state_machine.bonus.active and random() < SETTINGS.BONUS_CHANCE:
-                self.state_machine.bonus.activate(self.state_machine.field)
+                self.state_machine.bonus.activate(self.state_machine)
         if self.state_machine.bonus.active and self.state_machine.snake.position == self.state_machine.bonus.position:
-            self.state_machine.bonus.deactivate()
+            self.state_machine.bonus.deactivate(self.state_machine)
             self.state_machine.score += SETTINGS.BONUS_SCORE * score_multiplier
             self.state_machine.snake.stats["bonus"] += 1
 
