@@ -4,7 +4,7 @@ from source.engine.settings import COLORS, LAYOUT
 from source.engine.tools import Vector, Rectangle
 from source.engine.events import EventHandler
 
-from tkinter import Tk, Canvas
+from tkinter import Tk, Canvas, Event
 
 from typing import Union, Tuple, Dict
 
@@ -200,6 +200,9 @@ class Switch(TextLabel):
         self.state = state
         self.last_state = state
 
+    def relay(self):
+        self.state = not self.state
+
     def events(self, event_handler: EventHandler):
         super().events(event_handler)
         self.pressed = self.hovered and event_handler.click[0]
@@ -218,9 +221,6 @@ class Switch(TextLabel):
         c1, c2 = self.midleft + Vector(w1 / 2, 0), self.midleft + Vector(w1 + w2 / 2, 0)
         display.create_text(c1, text=self.text, justify="center", fill=color[0], font=self.font)
         display.create_text(c2, text=self.STATE_TEXT[self.state], justify="center", fill=color[1], font=self.font)
-
-    def relay(self):
-        self.state = not self.state
 
 
 class Slider(Widget):
@@ -324,6 +324,61 @@ class HeaderButton(Button):
         display.create_rectangle(*self.rect, fill=color, outline=color)
 
 
+class KeyConfigSwitch(Switch):
+
+    PLACEHOLDER = "-"
+
+    KEYMAP = {
+        '\x1b': "Escape",
+        '\x11': "Control",
+        '\x12': "Alt",
+        '\x10': "Shift",
+        '\r': "Enter",
+        ' ': "Space",
+        '%': "Left",
+        '&': "Up",
+        "'": "Right",
+        '(': "Down",
+    }
+
+    def __init__(
+            self,
+            group: WidgetGroup,
+            pos: Union[Tuple[int, int], Vector],
+            colors: Tuple[str, str],
+            keycode: int,
+            text_size: int = 1,
+            align: str = "midright",
+    ):
+        super().__init__(group, pos, (colors, colors), self.PLACEHOLDER, text_size, align=align)
+        self.color = colors
+        self.key_code = keycode
+        self.set_key(keycode)
+
+    def set_key(self, keycode):
+        self.key_code = keycode
+        self.update_text(self.key_name)
+
+    @property
+    def key_name(self) -> str:
+        character = chr(self.key_code)
+        return self.KEYMAP[character] if character in self.KEYMAP else character
+
+    def events(self, event_handler: EventHandler):
+        super().events(event_handler)
+
+        if self.state and (keys := event_handler["any", "press"]):
+            self.key_code = keys.pop()
+            self.relay()
+
+        if self.switched:
+            self.update_text(self.PLACEHOLDER if self.state else self.key_name)
+
+    def render(self, display: Canvas):
+        color = self.color[self.hovered]
+        display.create_text(*self.center, text=self.text, justify="center", fill=color, font=self.font)
+
+
 class LabeledSlider(WidgetGroup):
 
     HEIGHT_SHIFT = 30
@@ -344,25 +399,47 @@ class LabeledSlider(WidgetGroup):
         self.moved = False
         self.hovered = False
 
-        inactive, active = colors
-
-        self._slider = Slider(self, pos, colors, length, value)
-        self._label = TextLabel(self, LAYOUT.ORIGO, inactive[0], text, align="midleft")
-        self._value_label = TextLabel(self, LAYOUT.ORIGO, inactive[1], str(self.mapped), align="midright")
+        self._slider = Slider(self, pos, colors, length, self.inv_mapped(value))
+        self._label = TextLabel(self, LAYOUT.ORIGO, colors[0][0], text, align="midleft")
+        self._value_label = TextLabel(self, LAYOUT.ORIGO, colors[0][1], str(self.mapped), align="midright")
 
         self._label.snap((self._slider.left, pos[1] - self.HEIGHT_SHIFT))
         self._value_label.snap((self._slider.right, pos[1] - self.HEIGHT_SHIFT))
 
     def events(self, event_handler: EventHandler):
         super().events(event_handler)
-        self._value_label.update_text(str(int(self.mapped)))
+        self._value_label.update_text(str(self.mapped))
 
         self.moved = self._slider.moved
         self.hovered = any(widget.hovered for widget in self._widgets)
 
     @property
     def mapped(self):
-        return self._slider.value * (self.mapping[1] - self.mapping[0]) + self.mapping[0]
+        return int(self._slider.value * (self.mapping[1] - self.mapping[0]) + self.mapping[0])
 
-    def inv_mapped(self):
-        return (self._slider.value - self.mapping[0]) / (self.mapping[1] - self.mapping[0])
+    def inv_mapped(self, value):
+        return (value - self.mapping[0]) / (self.mapping[1] - self.mapping[0])
+
+
+class StatLabel(WidgetGroup):
+
+    def __init__(
+            self,
+            group: WidgetGroup,
+            pos: Union[Tuple[int, int], Vector],
+            width: int,
+            color: Tuple[str, str, str],
+    ):
+        super().__init__(group)
+
+        self.color = color
+
+        self._label = TextLabel(self, pos, color[0], "0", align="midright")
+        self._item = Rectangle(0, 0, LAYOUT.TILE - LAYOUT.GAP * 5, LAYOUT.TILE - LAYOUT.GAP * 5)
+        self._item.midleft = Vector(pos) - Vector(width, 0)
+
+        self.update_text = self._label.update_text
+
+    def render(self, display: Canvas):
+        self._label.render(display)
+        display.create_rectangle(*self._item.rect, fill=self.color[1], outline=self.color[1])

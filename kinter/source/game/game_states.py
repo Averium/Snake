@@ -3,6 +3,7 @@ from random import random
 from source.engine.settings import SETTINGS, KEYS, LAYOUT
 from source.engine.state_machine import State
 from source.engine.tools import Direction
+from source.engine.events import EventHandler
 
 
 class States:
@@ -167,7 +168,10 @@ class Game(State):
             self.state_machine.bonus.deactivate()
             self.state_machine.score += SETTINGS.BONUS_SCORE * score_multiplier
             self.state_machine.snake.stats["bonus"] += 1
+
         self.state_machine.score_value_label.update_text(str(self.state_machine.score))
+        self.state_machine.apple_stat_label.update_text(str(self.state_machine.snake.stats["apple"]))
+        self.state_machine.bonus_stat_label.update_text(str(self.state_machine.snake.stats["bonus"]))
 
     def render(self, display):
         self.state_machine.field.render(display, self.state_machine.snake)
@@ -275,6 +279,12 @@ class Settings(State):
         if self.state_machine.settings_return_button.pressed:
             return self.state_machine.last_state
 
+    def events(self, _):
+        if self.state_machine.wall_switch.switched:
+            SETTINGS.WALLS = self.state_machine.wall_switch.state
+        if self.state_machine.starting_speed_slider.moved:
+            SETTINGS.STARTING_SPEED = round(self.state_machine.starting_speed_slider.mapped)
+
     def entry_actions(self):
         self.state_machine.interface.activate(self.state_machine.settings_group)
 
@@ -291,11 +301,18 @@ class KeyConfig(State):
         if self.state_machine.key_config_return_button.pressed:
             return self.state_machine.last_state
 
+    def events(self, _):
+        if self.state_machine.reset_keys_button.pressed:
+            for key, switch in self.state_machine.key_config_switches.items():
+                switch.set_key(KEYS.DEFAULT[key])
+
     def entry_actions(self):
         self.state_machine.interface.activate(self.state_machine.key_config_group)
 
     def exit_actions(self):
         self.state_machine.interface.deactivate(self.state_machine.key_config_group)
+        for key, switch in self.state_machine.key_config_switches.items():
+            setattr(KEYS, key, switch.key_code)
 
 
 class Leaderboard(State):

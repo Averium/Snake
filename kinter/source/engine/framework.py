@@ -1,21 +1,26 @@
-from tkinter import Tk, Canvas, BOTH
+from ctypes import windll
 from tkinter import Tk, Canvas, BOTH
 from tkinter.font import Font
 
 from source.engine.clock import Clock, Timer
 from source.engine.events import EventHandler
+from source.engine.interface import (
+    Interface, WidgetGroup, Button, WindowHeader, HeaderButton, TextLabel, Switch, StatLabel, LabeledSlider,
+    KeyConfigSwitch
+)
+from source.engine.settings import SETTINGS, COLORS, LAYOUT, KEYS
+from source.engine.state_machine import StateMachine
+from source.engine.tools import Vector
 from source.game.game_objects import Field, Snake, Apple, Bonus
 from source.game.game_states import (
     Intro, Menu, Start, Game, GameOver, NewHighScore, Paused, Settings, KeyConfig, Leaderboard, Outro
 )
-from source.engine.interface import (
-    Widget, Interface, WidgetGroup, Button, WindowHeader, HeaderButton, TextLabel, Switch, Slider, LabeledSlider
-)
-from source.engine.settings import SETTINGS, COLORS, LAYOUT
-from source.engine.state_machine import StateMachine
 
 
 class Framework(Tk, StateMachine):
+    GWL_EXSTYLE = -20
+    WS_EX_APPWINDOW = 0x00040000
+    WS_EX_TOOLWINDOW = 0x00000080
 
     def __init__(self):
 
@@ -70,15 +75,17 @@ class Framework(Tk, StateMachine):
         self.panel_group = WidgetGroup(self.interface, "Panel", active=True)
         self.title_label = TextLabel(self.panel_group, LAYOUT.TITLE_LABEL, COLORS.GREEN_LABEL, "Snake", 4)
         self.score_label = TextLabel(self.panel_group, LAYOUT.SCORE_LABEL, COLORS.WHITE_LABEL, "Score: ", 1, "midleft")
-        self.score_value_label = TextLabel(self.panel_group, LAYOUT.SCORE_VALUE_LABEL, COLORS.GREEN_LABEL, "0", 1,
+        self.score_value_label = TextLabel(self.panel_group, LAYOUT.SCORE_VALUE_LABEL, COLORS.RED_LABEL, "0", 1,
                                            "midright")
         self.speed_label = TextLabel(self.panel_group, LAYOUT.SPEED_LABEL, COLORS.WHITE_LABEL, "Speed: ", 1, "midleft")
-        self.speed_value_label = TextLabel(self.panel_group, LAYOUT.SPEED_VALUE_LABEL, COLORS.GREEN_LABEL,
+        self.speed_value_label = TextLabel(self.panel_group, LAYOUT.SPEED_VALUE_LABEL, COLORS.RED_LABEL,
                                            str(self.speed), 1, "midright")
         self.walls_label = TextLabel(self.panel_group, LAYOUT.WALLS_LABEL, COLORS.WHITE_LABEL, "Walls: ", 1, "midleft")
-        self.walls_value_label = TextLabel(self.panel_group, LAYOUT.WALLS_VALUE_LABEL, COLORS.GREEN_LABEL,
+        self.walls_value_label = TextLabel(self.panel_group, LAYOUT.WALLS_VALUE_LABEL, COLORS.RED_LABEL,
                                            "ON" if self.walls else "OFF", 1, "midright")
         self.stat_label = TextLabel(self.panel_group, LAYOUT.STAT_LABEL, COLORS.GREEN_LABEL, "Statistics", 2)
+        self.apple_stat_label = StatLabel(self.panel_group, LAYOUT.APPLE_STAT, 170, [COLORS.RED_LABEL, COLORS.APPLE])
+        self.bonus_stat_label = StatLabel(self.panel_group, LAYOUT.BONUS_STAT, 170, [COLORS.RED_LABEL, COLORS.BONUS[0]])
 
         # menu #
         self.menu_group = WidgetGroup(self.interface, "Menu")
@@ -103,14 +110,24 @@ class Framework(Tk, StateMachine):
 
         self.starting_speed_slider = LabeledSlider(
             self.settings_group, LAYOUT.STARTING_SPEED_SLIDER, LAYOUT.SLIDER_LENGTH, COLORS.GREEN_SLIDER, "Speed:",
-            SETTINGS.STARTING_SPEED / (SETTINGS.SPEED_MAPPING[1] - SETTINGS.SPEED_MAPPING[0]),
-            SETTINGS.SPEED_MAPPING[:2]
+            SETTINGS.STARTING_SPEED, SETTINGS.SPEED_MAPPING[:2]
         )
 
         # key config #
         self.key_config_group = WidgetGroup(self.interface, "Key config")
         self.key_config_return_button = Button(self.key_config_group, LAYOUT.KEY_CONFIG_RETURN_BUTTON,
                                                COLORS.RED_BUTTON, "Back")
+        self.reset_keys_button = Button(self.key_config_group, LAYOUT.RESET_KEYS_BUTTON, COLORS.WHITE_BUTTON, "Default")
+
+        self.key_config_switches = {}
+        for row, (name, key) in enumerate(KEYS):
+            if name == "DEFAULT":
+                continue
+            switch_pos = Vector(LAYOUT.KEY_CONFIG_SWITCHES) + Vector(0, LAYOUT.KEY_CONFIG_LINE_SPACE * row)
+            label_pos = Vector(LAYOUT.KEY_CONFIG_LABELS) + Vector(0, LAYOUT.KEY_CONFIG_LINE_SPACE * row)
+            switch = KeyConfigSwitch(self.key_config_group, switch_pos, COLORS.RED_BUTTON, key)
+            TextLabel(self.key_config_group, label_pos, COLORS.WHITE_LABEL, name.capitalize()+":", 1, "midleft")
+            self.key_config_switches[name] = switch
 
         # high scores #
         self.high_scores_group = WidgetGroup(self.interface, "High scores")
@@ -161,9 +178,12 @@ class Framework(Tk, StateMachine):
         self.score_value_label.update_text(self.score)
         self.speed_value_label.update_text(self.speed)
         self.walls_value_label.update_text("ON" if self.walls else "OFF")
+        self.apple_stat_label.update_text(str(self.snake.stats["apple"]))
+        self.bonus_stat_label.update_text(str(self.snake.stats["bonus"]))
 
     def close(self):
         SETTINGS.save()
+        KEYS.save()
         self.destroy()
 
     def events(self):
@@ -173,12 +193,6 @@ class Framework(Tk, StateMachine):
 
         if self.close_button.pressed:
             self.running = False
-
-        if self.wall_switch.switched:
-            SETTINGS.WALLS = self.wall_switch.state
-
-        if self.starting_speed_slider.moved:
-            SETTINGS.STARTING_SPEED = round(self.starting_speed_slider.mapped)
 
     def logic(self):
         if self.loop_timer():
@@ -205,3 +219,13 @@ class Framework(Tk, StateMachine):
             self.after(self.clock.leftover(), self.loop)
         else:
             self.close()
+
+    def set_app_window(self):
+        hwnd = windll.user32.GetParent(self.winfo_id())
+        style = windll.user32.GetWindowLongPtrW(hwnd, self.GWL_EXSTYLE)
+        style = style & ~self.WS_EX_TOOLWINDOW
+        style = style | self.WS_EX_APPWINDOW
+        res = windll.user32.SetWindowLongPtrW(hwnd, self.GWL_EXSTYLE, style)
+        # re-assert the new window style
+        self.withdraw()
+        self.after(10, self.deiconify)

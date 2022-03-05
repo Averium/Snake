@@ -1,7 +1,7 @@
 {
-  "FPS": 120,
+  "FPS": 60,
   "STARTING_LENGTH": 3,
-  "STARTING_SPEED": 5,
+  "STARTING_SPEED": 8,
   "SPEED_MAPPING": [
     1,
     10,
@@ -11,5 +11,5 @@
   "BONUS_CHANCE": 0.05,
   "APPLE_SCORE": 1,
   "BONUS_SCORE": 2,
-  "WALLS": true
+  "WALLS": false
 }

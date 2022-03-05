@@ -3,6 +3,7 @@ from kinter.source.engine.framework import Framework
 
 def main():
     framework = Framework()
+    framework.after(10, framework.set_app_window)
     framework.mainloop()
 
 
@@ -10,12 +11,9 @@ if __name__ == "__main__":
     main()
 
 
-# FIXME: Window disappears when losing focus
-
 # TODO:
 #  - [ BASIC ] -------------------------------------------------
-#  Statistics interface
-#  Key config implementation (buttons with changing text)
+#  Bonus countdown and speed dependent bonus timer
 #  Input field widget implementation
 #  High score system implementation
 #  Leaderboard implementation

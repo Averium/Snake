@@ -1,9 +1,16 @@
 {
-  "EXIT": "escape",
-  "PAUSE": "p",
-
-  "UP": "w",
-  "DOWN": "s",
-  "LEFT": "a",
-  "RIGHT": "d"
+  "EXIT": 27,
+  "PAUSE": 80,
+  "UP": 87,
+  "DOWN": 83,
+  "LEFT": 65,
+  "RIGHT": 68,
+  "DEFAULT": {
+    "EXIT": 27,
+    "PAUSE": 80,
+    "UP": 87,
+    "DOWN": 83,
+    "LEFT": 65,
+    "RIGHT": 68
+  }
 }

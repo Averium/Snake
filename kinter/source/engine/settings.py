@@ -20,6 +20,9 @@ class JsonData:
         self.load()
         self.read_only = read_only
 
+    def __iter__(self):
+        yield from self._data.items()
+
     def load(self):
         with open(self._file, "r") as FILE:
             self._data = json.load(FILE)
